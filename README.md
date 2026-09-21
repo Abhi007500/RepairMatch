@@ -2,428 +2,498 @@
 > **An algorithmic, on-demand household and daily-life repair marketplace that matches service requests to verified, specialized technicians.**
 
 [![Java 21+](https://img.shields.io/badge/Java-21%2B-ED8B00?logo=openjdk&logoColor=white)](https://openjdk.org/)
-[![Spring Boot 3.3](https://img.shields.io/badge/Spring%20Boot-3.3-6DB33F?logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Spring Boot 3.3.4](https://img.shields.io/badge/Spring%20Boot-3.3.4-6DB33F?logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
+[![PostgreSQL 16](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Flyway Migration](https://img.shields.io/badge/Flyway-10.x-CC0200?logo=flyway&logoColor=white)](https://flywaydb.org/)
 [![React 18](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black)](https://react.dev/)
-[![Vite](https://img.shields.io/badge/Vite-5-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-3-38B2AC?logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
+[![Vite 5](https://img.shields.io/badge/Vite-5-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
+[![Tailwind CSS 3](https://img.shields.io/badge/Tailwind%20CSS-3-38B2AC?logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ---
 
-## 📌 Professional Summary
+## 🌐 Live Demo & Deployment Status
 
-**RepairMatch** is a full-stack, enterprise-grade on-demand service marketplace designed to solve the structural inefficiencies of local home and appliance repair services. Rather than presenting static, uncurated technician directories, RepairMatch implements an **algorithmic multi-factor matching engine** that pairs customer repair requests with the highest-fit technician based on device brand and model expertise, symptom specialization, geographic proximity (Haversine distance), calendar availability, pricing competitiveness, and past verified performance.
+| Service | Environment | URL | Status |
+| :--- | :--- | :--- | :--- |
+| **Web Application** | Cloud Production | `https://your-deployment-url.com` *(Placeholder — Add cloud URL upon deployment)* | Pending Deployment |
+| **Backend REST API** | Cloud Production | `https://api.your-deployment-url.com` *(Placeholder — Add cloud URL upon deployment)* | Pending Deployment |
+| **Local Frontend** | Development | [http://localhost:5173](http://localhost:5173) | Ready |
+| **Local API Base** | Development | [http://localhost:8080](http://localhost:8080) | Ready |
+| **Health Endpoint** | Development | [http://localhost:8080/api/health](http://localhost:8080/api/health) | `{"status":"UP"}` |
 
-The platform includes end-to-end user journeys for customers, technicians, and administrators, accompanied by a deterministic booking lifecycle state machine, dual-mode authentication (stateless JWT and rate-limited phone OTP), and an online payment integration supporting Razorpay checkout with cryptographic HMAC-SHA256 signature verification.
+---
+
+## 📑 Table of Contents
+1. [Project Overview](#-project-overview)
+2. [Problem Statement](#-problem-statement)
+3. [Key Capabilities](#-key-capabilities)
+4. [Technology Stack](#-technology-stack)
+5. [System Architecture](#-system-architecture)
+6. [Repository Structure](#-repository-structure)
+7. [Database Architecture & Migrations](#-database-architecture--migrations)
+8. [User Workflows](#-user-workflows)
+   - [Customer Journey](#1-customer-workflow)
+   - [Technician Console](#2-technician-workflow)
+   - [Admin Governance](#3-administrator-workflow)
+9. [Intelligent Matching Engine](#-intelligent-technician-matching-engine)
+10. [Booking Lifecycle State Machine](#-booking-lifecycle-state-machine)
+11. [Authentication & Security](#-authentication--security)
+12. [Mobile OTP Architecture](#-mobile-otp-architecture)
+13. [Online Payment Architecture (Razorpay)](#-online-payment-architecture-razorpay)
+14. [Local Setup & Getting Started](#-local-setup--getting-started)
+15. [Environment Variables Reference](#-environment-variables-reference)
+16. [REST API Reference](#-rest-api-reference)
+17. [Testing & Verification](#-testing--verification)
+18. [Production Deployment Guide](#-production-deployment-guide)
+19. [Future Roadmap](#-future-roadmap)
+20. [Author & Contact](#-author--contact)
+
+---
+
+## 📌 Project Overview
+
+**RepairMatch** is a full-stack, modular on-demand repair marketplace designed to eliminate the unpredictability of local utility and appliance repairs. Unlike standard directory websites that present unverified contact lists, RepairMatch implements an **algorithmic multi-factor matching engine** that analyzes repair requests against technician profiles in real time. 
+
+The application matches users based on hardware brand specialization, problem diagnosis, Haversine geographic distance, schedule non-conflict, verified customer rating history, and pricing competitiveness. 
+
+The project is built as a clean modular monolith using **Java 21**, **Spring Boot 3.3**, and **PostgreSQL** on the backend, paired with a responsive **React 18** Single Page Application styled with **Tailwind CSS**.
 
 ---
 
 ## ⚠️ Problem Statement
 
-Finding reliable, competent technicians for home appliances and daily utility fixes is broken:
-- **Generic Directories:** Most service platforms list contractors by generic category (e.g., "Electrician" or "Appliance Repair"), ignoring specific brand and component certifications (e.g., Apple logic board repairs or Daikin inverter compressor diagnostics).
-- **Unchecked Availability:** Technicians receive booking requests while on another job or outside their realistic travel perimeter, leading to cancellations and delays.
-- **Price Opacity:** Customers face arbitrary pricing on arrival without clear inspection rates or transparent invoicing.
-- **Fake or Unverified Reviews:** Platforms often allow unverified accounts to post reviews, distorting trust.
-- **Unreliable Scheduling:** Manual dispatch lacks finite state validation, resulting in lost bookings, double-bookings, and untracked service histories.
+Homeowners and consumers face persistent challenges when sourcing technical help for appliances and utilities:
+- **Generic Listings:** Platforms categorize contractors into broad buckets (e.g. "Electrician" or "Appliance Repair"), failing to capture whether the technician has certified experience with a specific brand (e.g., Apple logic boards vs. Dell laptops, or Daikin inverter compressors vs. standard window units).
+- **Dispatch Clashes:** Requests are often routed to contractors who are already occupied with active bookings or located beyond a realistic travel radius.
+- **Hidden Fees:** Pricing is rarely disclosed upfront; consumers are often quoted arbitrary amounts after diagnostic inspection.
+- **Unverified Reviews:** Without mandatory booking validation, review platforms suffer from spam and unverified feedback.
+- **Lack of Traceability:** Traditional service scheduling lacks a formal state machine, leading to lost requests, missed appointments, and zero audit logs.
 
-RepairMatch addresses each of these pain points with a rule-governed, data-driven architecture.
-
----
-
-## 🚀 Key Features
-
-- **16 Comprehensive Repair Categories:** Electronics (Smartphones, Laptops, Tablets, TVs), Large Appliances (ACs, Refrigerators, Washing Machines, Microwaves), Utilities (Geysers, RO Purifiers, Coolers, Inverters), and Home Trades (Electrical, Plumbing, Carpentry, Furniture Repair).
-- **Two-Stage Multi-Factor Matching:** Hard constraint filtering (KYC verification, duty status, travel radius, schedule non-conflict) followed by weighted heuristic scoring (0–100%).
-- **Deterministic Booking Lifecycle:** Formal finite state machine (`PENDING` ➔ `ACCEPTED` ➔ `IN_PROGRESS` ➔ `COMPLETED` / `CANCELLED` / `REJECTED`) with an immutable audit log (`booking_timeline`).
-- **Dual Authentication System:** Standard email/password login and mobile phone OTP verification with rate-limiting, resend cooldown, and BCrypt-hashed token storage.
-- **Online Payment Processing:** Integrated payment flow with Razorpay, enforcing backend cryptographic HMAC-SHA256 verification and idempotency controls.
-- **Verified Customer Reviews:** 1-review-per-completed-booking restriction with atomic technician score and review count recalculation.
-- **Technician Operating Console:** Real-time on-duty/off-duty availability toggle, live job queue, service status advancement, and invoicing tools.
-- **Admin Governance Portal:** Platform metrics, KYC document verification queue, and user management directory.
-- **Dark Mode Support:** System-aware theme toggle with persistent storage and WCAG-accessible contrast styling.
+RepairMatch addresses each challenge through strict domain boundaries, automated constraint checking, cryptographic payment verification, and an auditable lifecycle model.
 
 ---
 
-## 👤 User Workflows
+## 🚀 Key Capabilities
 
-### 1. Customer Workflow
-1. **Browse or Diagnose:** Customer selects a service category from the homepage or initiates the 5-step Repair Diagnostic Wizard (`/wizard`).
-2. **Device & Symptom Specification:** For appliances/electronics, the customer specifies the manufacturer and model, then selects the exact failure symptom from pre-seeded common fault profiles.
-3. **Location & Schedule Selection:** Customer provides service location coordinates (or saved address) and selects an appointment date and convenient time window.
-4. **Matched Recommendations:** The matching engine scores all qualified technicians, displaying explainable badges (`Brand Specialist`, `Nearby (X km)`, `Top Rated`, `Expert in this issue`).
-5. **Instant Booking & Tracking:** Customer confirms the request. The booking appears on their tracking dashboard (`/bookings`) with real-time lifecycle tracking.
-6. **Online Payment & Review:** Once invoiced or completed, the customer can pay online via the integrated checkout modal and submit a verified 5-star review.
-
-### 2. Technician Workflow
-1. **Onboarding & KYC:** Technicians register with credentials, service radius, inspection fee, and categories/brands/problems they specialize in. Account starts in `PENDING` status.
-2. **Duty Toggle:** Verified technicians switch their status between `On Duty` and `Off Duty` directly from their dashboard (`/technician`).
-3. **Job Dispatch:** Incoming booking requests appear in the technician's queue with device details, reported fault, customer address, and schedule.
-4. **Lifecycle Progression:** Technician accepts the request, marks `In Progress` upon arrival, and enters final repair costs upon job completion.
-5. **Reputation Monitoring:** Technicians view verified customer ratings and feedback transparently in their profile console.
-
-### 3. Administrator Workflow
-1. **Metrics Dashboard:** Real-time visibility into active users, registered technicians, total bookings, and platform activity.
-2. **KYC Document Verification:** Admin reviews technician identity documents and approves or rejects credential applications with a single click.
-3. **User Governance:** Filterable directory of all platform customers, technicians, and administrators with role-based visibility.
-
----
-
-## 🧠 Intelligent Technician Matching Engine
-
-The matching engine (`POST /api/matching/find`) processes candidates through two stages:
-
-```mermaid
-flowchart TD
-    A["Incoming Service Request\n(Category, Brand, Problem, Lat/Lng, Slot)"] --> B{"Stage 1: Hard Filters"}
-    B -->|"KYC != VERIFIED"| X1["Exclude"]
-    B -->|"is_available == false"| X2["Exclude"]
-    B -->|"Category not serviced"| X3["Exclude"]
-    B -->|"Distance > Service Radius"| X4["Exclude"]
-    B -->|"Time Slot Conflict"| X5["Exclude"]
-    B -->|"Passes All Hard Gates"| C["Stage 2: Weighted Multi-Factor Scoring"]
-    C --> D["Brand Specialization (25%)"]
-    C --> E["Problem / Symptom Expertise (20%)"]
-    C --> F["Geographic Proximity (20%)"]
-    C --> G["Customer Rating (15%)"]
-    C --> H["Job Track Record (10%)"]
-    C --> I["Price Competitiveness (10%)"]
-    D & E & F & G & H & I --> J["Aggregate Score (0 - 100%)"]
-    J --> K["Generate Explainability Badges"]
-    K --> L["Ranked Candidate List"]
-```
-
-### Scoring Formula
-$$\text{Score} = w_{\text{brand}} + w_{\text{problem}} + w_{\text{distance}} + w_{\text{rating}} + w_{\text{history}} + w_{\text{price}}$$
-
-| Factor | Weight | Evaluation Criteria |
-| :--- | :---: | :--- |
-| **Brand Specialization** | **25%** | Awarded if technician has certified expertise with the specific manufacturer (e.g. Apple, Samsung, Daikin). |
-| **Problem Expertise** | **20%** | Awarded if technician has explicitly registered skill in the diagnosed symptom. |
-| **Proximity Score** | **20%** | Linear distance decay: closer technicians receive higher points based on Haversine distance up to their service radius. |
-| **Customer Rating** | **15%** | Linear scaling from verified customer rating average ($\frac{\text{Rating}}{5.0} \times 15$). |
-| **Track Record** | **10%** | Tiered by completed jobs: $\ge 50$ jobs (10 pts), $\ge 20$ (7 pts), $\ge 5$ (4 pts). |
-| **Price Competitiveness** | **10%** | Inversely proportional ratio comparing technician inspection fee against the category average. |
-
----
-
-## 🔄 Booking Lifecycle State Machine
-
-```mermaid
-stateDiagram-v2
-    [*] --> PENDING: Customer books technician
-    PENDING --> ACCEPTED: Technician accepts job
-    PENDING --> REJECTED: Technician declines job
-    PENDING --> CANCELLED: Customer cancels booking
-    ACCEPTED --> IN_PROGRESS: Technician begins service
-    ACCEPTED --> CANCELLED: Customer cancels before work
-    IN_PROGRESS --> COMPLETED: Technician marks completed & invoices
-    REJECTED --> [*]
-    CANCELLED --> [*]
-    COMPLETED --> [*]
-```
-
-- **Validation:** Every transition is checked against valid transition rules in `BookingStateMachine`. Illegal transitions return `400 Bad Request`.
-- **Auditability:** Every transition automatically records an entry in `booking_timeline` with timestamp and note.
-- **Side Effects:** Marking a booking `COMPLETED` increments the technician's completed job count, marks payment eligible, and unlocks customer review submission.
-
----
-
-## 🔐 Authentication & Security
-
-- **Stateless JWT Tokens:** Issues HMAC-SHA256 signed JSON Web Tokens (`app.jwt.secret`) valid for 24 hours. The `JwtAuthenticationFilter` validates tokens on every API request.
-- **Password Security:** All passwords are salted and hashed using BCrypt via Spring Security's `PasswordEncoder`. Plaintext passwords are never stored.
-- **Role-Based Access Control (RBAC):** Endpoints are protected by Spring Security method rules enforcing `CUSTOMER`, `TECHNICIAN`, or `ADMIN` roles.
-- **CORS Protection:** Configurable allowed origins (`CORS_ALLOWED_ORIGINS`) prevents cross-site scripting vulnerabilities.
-
----
-
-## 📱 Mobile OTP Architecture
-
-The platform supports phone-number-based authentication for customers and technicians alongside password sign-in.
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor User as Client (Web)
-    participant Auth as AuthController / AuthService
-    participant SMS as SmsOtpProvider
-    participant DB as PostgreSQL (otp_verifications)
-
-    User->>Auth: POST /api/auth/otp/send (Phone Number)
-    Auth->>Auth: Validate Indian Phone Format (^[6-9]\d{9}$)
-    Auth->>DB: Check Active Cooldown (60s)
-    Auth->>Auth: Generate 6-digit OTP (SecureRandom)
-    Auth->>DB: Store BCrypt Hash (otp_hash, expires_at, max_attempts=5)
-    Auth->>SMS: Dispatch OTP via Twilio / Dev Provider
-    Auth-->>User: 200 OK (cooldown: 60s, expires: 5m, zero OTP in response)
-    
-    User->>Auth: POST /api/auth/otp/verify (Phone Number + Code)
-    Auth->>DB: Fetch Active Verification Record
-    Auth->>Auth: Check Expiration & Verification Status
-    Auth->>Auth: Validate Code with passwordEncoder.matches()
-    alt Invalid Code
-        Auth->>DB: Increment attempts counter
-        Auth-->>User: 400 Bad Request ("Invalid code. X attempts remaining")
-    else Valid Code
-        Auth->>DB: Mark is_verified = true
-        Auth-->>User: 200 OK with JWT Bearer Token
-    end
-```
-
-### Security Safeguards:
-1. **BCrypt Storage:** Plaintext OTPs are never stored in the database.
-2. **Indian Phone Validation:** Enforces standard 10-digit mobile numbering (`^[6-9]\d{9}$`).
-3. **Resend Cooldown:** 60-second minimum interval between OTP requests.
-4. **Brute-Force Rate Limiting:** Locked after 5 failed verification attempts.
-5. **Single-Use:** Once verified, an OTP record is immediately invalidated.
-6. **Zero Leakage:** The OTP code is never exposed in API responses or production logs.
-7. **Provider Abstraction:** `SmsOtpProvider` interface allows switching between `dev` (simulation), `twilio`, and other SMS gateways via configuration.
-
----
-
-## 💳 Online Payment Architecture (Razorpay)
-
-Payment for inspection and repair fees is handled through an integrated Razorpay workflow:
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor Customer as Customer (Browser)
-    participant API as Payment API
-    participant RZP as Razorpay Gateway
-    participant DB as Database
-
-    Customer->>API: POST /api/payments/create-order (bookingId)
-    API->>API: Verify Ownership & Calculate Due Amount
-    API->>RZP: Create Order (amount, currency: INR)
-    API->>DB: Persist Payment (status: PENDING, order_id)
-    API-->>Customer: Order Details & Razorpay Key ID
-    Customer->>Customer: Render Razorpay Checkout Modal
-    Customer->>RZP: Submit Card / UPI / NetBanking
-    RZP-->>Customer: Payment Callback (razorpay_order_id, razorpay_payment_id, razorpay_signature)
-    Customer->>API: POST /api/payments/verify
-    API->>API: Compute HMAC-SHA256(order_id + "|" + payment_id, secret)
-    API->>API: MessageDigest.isEqual(computedSignature, receivedSignature)
-    API->>DB: Update Payment status -> PAID
-    API->>DB: Update Booking payment_status -> PAID
-    API->>DB: Add Timeline Event ("Payment received via Razorpay")
-    API-->>Customer: 200 OK (Payment Verified Receipt)
-```
-
-### Payment Features:
-- **Cryptographic Verification:** Signatures are computed using Java's `javax.crypto.Mac` (`HmacSHA256`) and compared in constant time (`MessageDigest.isEqual`) to prevent timing attacks.
-- **Idempotency Guard:** Duplicate callbacks for already-paid transactions return the existing `PAID` record safely.
-- **Comprehensive Lifecycle States:** `PENDING`, `AUTHORIZED`, `PAID`, `FAILED`, `REFUNDED`, `CANCELLED`.
-- **Audit Integration:** Verified payments automatically update booking records and write audit events to `booking_timeline`.
+- **16 Curated Repair Categories:**
+  - *Electronics & Computing:* Smartphones, Laptops, Tablets, Televisions.
+  - *Major Home Appliances:* Air Conditioners, Refrigerators, Washing Machines, Microwaves.
+  - *Home Utilities:* Geysers, Water Purifiers (RO), Fans/Coolers, Inverters & Batteries.
+  - *Trade Services:* Electrical Work, Plumbing, Carpentry, Furniture Repair.
+- **Two-Stage Multi-Factor Matching Engine:** Filters unqualified candidates via mandatory constraints, then scores qualified technicians using a weighted multi-variable formula (0–100%).
+- **Deterministic Booking Lifecycle:** State machine enforcing valid status progressions (`PENDING` ➔ `ACCEPTED` ➔ `IN_PROGRESS` ➔ `COMPLETED`, plus `CANCELLED` and `REJECTED`) with an immutable `booking_timeline` audit log.
+- **Dual-Mode Authentication:**
+  - Standard email and BCrypt-hashed password sign-in with stateless JWT issuance.
+  - Rate-limited mobile phone OTP authentication with 60s cooldown, 5-attempt lockout, and BCrypt-hashed token storage.
+- **Online Payment Integration:** Full Razorpay gateway workflow with backend HMAC-SHA256 signature verification, idempotency protection, and payment state tracking (`PENDING`, `AUTHORIZED`, `PAID`, `FAILED`, `REFUNDED`, `CANCELLED`).
+- **Verified Review Engine:** 1-review-per-completed-booking restriction that atomically recalculates technician average ratings and review counts.
+- **Technician Management Portal:** Active on-duty/off-duty toggle switch, live job dispatch queue, and diagnostic-to-completion invoicing.
+- **Admin Governance Portal:** Platform metrics dashboard, KYC credential verification queue, and unified user registry.
+- **Accessibility & Theme System:** System-aware Dark Mode and Light Mode with zero layout shift and Tailwind `class` styling.
 
 ---
 
 ## 🛠️ Technology Stack
 
-| Layer | Technology | Purpose |
+### Backend Architecture
+| Component | Technology | Rationale |
 | :--- | :--- | :--- |
-| **Backend Framework** | Java 21 / 23, Spring Boot 3.3.4 | RESTful API, dependency injection, and security |
-| **Persistence & ORM** | Spring Data JPA, Hibernate 6 | Relational data mapping and repository abstraction |
-| **Database** | PostgreSQL 16 (H2 for tests) | Production relational data storage |
-| **Migrations** | Flyway 10.x | Version-controlled, idempotent database schema migrations |
-| **Security** | Spring Security 6, JJWT 0.12.6, BCrypt | Token authentication, password hashing, and endpoint authorization |
-| **Frontend Framework** | React 18, Vite 5 | Reactive Single Page Application |
-| **Styling & UI** | Tailwind CSS 3, Lucide React | Clean, responsive, and dark-mode-ready interface |
-| **State & Routing** | React Context API, React Router DOM 6 | Client-side routing and authentication state management |
-| **HTTP Client** | Axios | Interceptor-based HTTP client with automatic token attachment |
-| **Testing** | JUnit 5, Mockito, Spring Boot Test, MockMvc | Comprehensive automated unit and integration testing |
+| **Runtime & Language** | Java 21 LTS / Java 23 | Modern language features, strong type safety, and high-performance concurrency |
+| **Framework** | Spring Boot 3.3.4 | Dependency injection, enterprise security, and production-ready monitoring |
+| **Security & JWT** | Spring Security 6, JJWT 0.12.6 | Stateless bearer token authentication and role-based endpoint protection |
+| **Database Access** | Spring Data JPA, Hibernate 6 | Type-safe repository abstraction, transactions, and entity lifecycle hooks |
+| **Database Migrations** | Flyway 10.x | Reproducible, version-controlled SQL schema evolution across environments |
+| **Testing Suite** | JUnit 5, Mockito, Spring Boot Test | Comprehensive unit, mock web, and integration test coverage |
+
+### Frontend Architecture
+| Component | Technology | Rationale |
+| :--- | :--- | :--- |
+| **Framework & Tooling** | React 18, Vite 5 | Lightning-fast HMR dev server and optimized production build tree-shaking |
+| **Styling & Icons** | Tailwind CSS 3, Lucide React | Utility-first responsive design, dark mode tokens, and lightweight icons |
+| **Routing** | React Router DOM 6 | Client-side route declarations, protected routes, and role-based redirection |
+| **HTTP Client** | Axios | Interceptors for automated JWT bearer token injection and 401 response handling |
+
+### Database & Storage
+| Component | Technology | Rationale |
+| :--- | :--- | :--- |
+| **Primary Database** | PostgreSQL 16 | Relational consistency, transactional ACID compliance, and geospatial coordinates |
+| **Test Database** | H2 Database (in-memory) | High-speed, isolated integration testing with PostgreSQL compatibility mode |
 
 ---
 
 ## 🏛️ System Architecture
 
 ```
-                               ┌─────────────────────────────┐
-                               │   React 18 + Vite SPA       │
-                               │   (Port 5173)               │
-                               └──────────────┬──────────────┘
-                                              │ HTTP / JSON
-                                              │ (Bearer JWT)
-                                              ▼
+                          ┌───────────────────────────────┐
+                          │     React 18 + Vite SPA       │
+                          │   (Desktop & Mobile Web)      │
+                          └───────────────┬───────────────┘
+                                          │ HTTP / JSON
+                                          │ (Bearer JWT / Axios)
+                                          ▼
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
-│ Spring Boot 3 Backend Service (Port 8080)                                               │
+│ Spring Boot 3.3 Backend Application (Port 8080)                                         │
 │                                                                                        │
-│  ┌────────────────────────┐  ┌────────────────────────┐  ┌──────────────────────────┐  │
-│  │ Security & Filters     │  │ Domain Controllers     │  │ Business Services        │  │
-│  │ • JwtAuthFilter        │  │ • AuthController       │  │ • AuthService            │  │
-│  │ • SecurityConfig       │  │ • MatchingController   │  │ • MatchingEngineService  │  │
-│  │ • CorsConfig           │  │ • BookingController    │  │ • BookingStateMachine    │  │
-│  │ • GlobalExceptionHandler│ │ • PaymentController    │  │ • PaymentService         │  │
-│  └────────────────────────┘  │ • CatalogController    │  │ • CustomerService        │  │
-│                              │ • TechnicianController │  │ • TechnicianService      │  │
-│                              │ • AdminController      │  │ • ReviewService          │  │
-│                              └────────────────────────┘  └──────────────────────────┘  │
-│                                           │                                            │
-│                                           ▼                                            │
-│                              ┌────────────────────────┐                                │
-│                              │ Spring Data JPA        │                                │
-│                              │ Repositories           │                                │
-│                              └────────────┬───────────┘                                │
-└───────────────────────────────────────────┼────────────────────────────────────────────┘
-                                            │ JDBC
-                                            ▼
-                               ┌────────────────────────┐
-                               │ PostgreSQL Database    │
-                               │ (Port 5432)            │
-                               │ • 15 Relational Tables │
-                               │ • Flyway Migrations    │
-                               └────────────────────────┘
+│  ┌─────────────────────────┐  ┌─────────────────────────┐  ┌─────────────────────────┐ │
+│  │ Security & Filters      │  │ Domain Controllers      │  │ Business Services       │ │
+│  │ • JwtAuthFilter         │  │ • AuthController        │  │ • AuthService           │ │
+│  │ • SecurityConfig (RBAC) │  │ • MatchingController    │  │ • MatchingEngineService │ │
+│  │ • CorsConfig            │  │ • BookingController     │  │ • BookingStateMachine   │ │
+│  │ • GlobalExceptionHandler│  │ • PaymentController     │  │ • PaymentService        │ │
+│  └─────────────────────────┘  │ • CatalogController     │  │ • TechnicianService     │ │
+│                               │ • TechnicianController  │  │ • ReviewService         │ │
+│                               │ • AdminController       │  │ • CustomerService       │ │
+│                               └─────────────────────────┘  └─────────────────────────┘ │
+│                                            │                                           │
+│                                            ▼                                           │
+│                               ┌─────────────────────────┐                              │
+│                               │ Spring Data JPA Repos   │                              │
+│                               └────────────┬────────────┘                              │
+└────────────────────────────────────────────┼───────────────────────────────────────────┘
+                                             │ JDBC Connection
+                                             ▼
+                                ┌─────────────────────────┐
+                                │ PostgreSQL Database     │
+                                │ (Port 5432)             │
+                                │ • 16 Relational Tables  │
+                                │ • Flyway Migrations     │
+                                └─────────────────────────┘
 ```
 
 ---
 
-## 🗄️ Database Schema Overview
-
-The database contains 15 tables managed across 4 Flyway migrations:
-
-1. **`users`**: Platform accounts (Customer, Technician, Admin) with BCrypt password hashes.
-2. **`addresses`**: Customer doorstep locations with geospatial coordinates (`latitude`, `longitude`).
-3. **`technician_profiles`**: Operating details (radius, bio, KYC document, inspection fee, ratings).
-4. **`categories`**: 16 primary service categories with iconography and brand requirements.
-5. **`brands`**: Device manufacturers (Apple, Samsung, Daikin, LG, etc.).
-6. **`models`**: Specific appliance/device models mapped to brands.
-7. **`problem_types`**: Common symptom definitions with estimated baseline repair costs.
-8. **`category_brands`**: Many-to-many relationship mapping categories to supported brands.
-9. **`technician_categories`**: Service categories covered by each technician.
-10. **`technician_brands`**: Specific manufacturer certifications held by technicians.
-11. **`technician_problems`**: Specialization in specific repair symptoms.
-12. **`bookings`**: Service requests with scheduling, pricing, state, and payment indicators.
-13. **`booking_timeline`**: Immutable audit log of all lifecycle transitions.
-14. **`reviews`**: Customer ratings (1–5) and written feedback linked to completed bookings.
-15. **`otp_verifications`**: Rate-limited, hashed OTP verification records.
-16. **`payments`**: Transaction records linking bookings to payment orders, statuses, and signatures.
-
----
-
-## 📁 Project Directory Layout
+## 📂 Repository Structure
 
 ```
 Repairmatch/
-├── .env.example                   # Master environment variable template
-├── .gitignore                     # Git ignore rules for Java, Node, IDEs & OS
-├── README.md                      # Comprehensive project documentation
-├── start-dev.sh                   # 1-command development startup script
-├── backend/                       # Spring Boot 3 Java Backend
-│   ├── pom.xml                    # Maven build configuration
+├── .env.example                       # Master environment configuration template
+├── .gitignore                         # Comprehensive ignore rules (Java, Node, IDEs, OS)
+├── README.md                          # Project documentation
+├── start-dev.sh                       # Local development startup script
+│
+├── backend/                           # Spring Boot 3 Java Backend
+│   ├── pom.xml                        # Maven project descriptor & dependencies
 │   └── src/
 │       ├── main/
 │       │   ├── java/com/repairmatch/
-│       │   │   ├── common/        # Security, JWT, CORS, GeoUtils, exceptions
-│       │   │   └── modules/       # Domain modules:
-│       │   │       ├── admin/     # Admin metrics and KYC management
-│       │   │       ├── auth/      # JWT and OTP authentication & SMS providers
-│       │   │       ├── booking/   # Booking lifecycle state machine & timeline
-│       │   │       ├── catalog/   # Categories, brands, models, problem types
-│       │   │       ├── matching/  # Two-stage multi-factor matching engine
-│       │   │       ├── payment/   # Razorpay integration & signature verification
-│       │   │       ├── review/    # Reviews and reputation recalculation
-│       │   │       ├── technician/# Profiles, skills, and availability toggles
-│       │   │       └── user/      # User accounts and addresses
+│       │   │   ├── RepairMatchApplication.java
+│       │   │   ├── common/            # Cross-cutting concerns
+│       │   │   │   ├── config/        # Security, CORS, PasswordEncoder configs
+│       │   │   │   ├── exception/     # GlobalExceptionHandler, Custom Exceptions
+│       │   │   │   ├── security/      # JwtTokenProvider, UserPrincipal, JwtAuthFilter
+│       │   │   │   └── utils/         # GeoUtils (Haversine distance calculations)
+│       │   │   └── modules/           # Cohesive business domain packages
+│       │   │       ├── admin/         # Operations stats, KYC approvals
+│       │   │       ├── auth/          # Login, Register, Mobile OTP, SMS providers
+│       │   │       ├── booking/       # Booking state machine, lifecycle, timeline
+│       │   │       ├── catalog/       # Categories, Brands, Models, Problem Types
+│       │   │       ├── matching/      # Multi-factor matching scoring algorithm
+│       │   │       ├── payment/       # Razorpay gateway, signature verification
+│       │   │       ├── review/        # Customer feedback & reputation calculation
+│       │   │       ├── technician/    # Profiles, skills, availability toggles
+│       │   │       └── user/          # User entities, addresses, profiles
 │       │   └── resources/
-│       │       ├── application.yml
-│       │       └── db/migration/  # Flyway schema migrations (V1 to V4)
-│       └── test/                  # 42 automated tests (H2 in-memory DB)
-└── frontend/                      # React 18 + Vite Frontend
-    ├── .env.example               # Frontend environment template
-    ├── package.json               # Frontend dependencies & scripts
-    ├── vite.config.js             # Vite configuration and API proxy
-    ├── tailwind.config.js         # Tailwind CSS styling setup
+│       │       ├── application.yml    # Externalized configuration properties
+│       │       └── db/migration/      # Flyway SQL scripts (V1 through V4)
+│       └── test/                      # Automated test suites (42 test cases)
+│
+└── frontend/                          # React 18 + Vite Frontend
+    ├── .env.example                   # Frontend environment template
+    ├── package.json                   # NPM dependencies and scripts
+    ├── vite.config.js                 # Vite server & API proxy config
+    ├── tailwind.config.js             # Tailwind design system configuration
+    ├── postcss.config.js              # PostCSS plugins
+    ├── index.html                     # HTML entry point
     └── src/
-        ├── api/                   # Axios client with JWT interceptor
-        ├── context/               # AuthContext and ThemeContext
-        ├── components/            # Common UI elements (Navbar, Footer, Badge)
-        └── features/              # Feature modules:
-            ├── admin/             # Admin console and KYC verification
-            ├── auth/              # Dual login (Password & OTP) and registration
-            ├── customer/          # Repair Wizard and booking tracker
-            ├── home/              # Hero, category grid, and value propositions
-            ├── payment/           # Razorpay payment modal
-            └── technician/        # Technician job queue and profile manager
+        ├── api/client.js              # Configured Axios client with JWT interceptors
+        ├── context/                   # React context providers (AuthContext, ThemeContext)
+        ├── components/common/         # Shared UI elements (Navbar, Footer, Badge, Rating)
+        └── features/                  # Feature pages & components
+            ├── admin/                 # AdminDashboardPage (Metrics, KYC, User list)
+            ├── auth/                  # LoginPage (Dual-mode), RegisterPage
+            ├── customer/              # RepairWizardPage (5 steps), CustomerBookingsPage
+            ├── home/                  # HomePage (Hero, Categories, Value props)
+            ├── payment/               # PaymentModal (Razorpay checkout & receipt)
+            └── technician/            # TechnicianDashboardPage (Queue, Status, Invoicing)
 ```
 
 ---
 
-## ⚙️ Environment Variables
+## 🗄️ Database Architecture & Migrations
 
-Copy `.env.example` to `.env` in the root directory and configure as needed:
+The database is version-controlled with **Flyway** and adheres to strict relational integrity with foreign keys, cascading constraints, and performance indexes.
 
-| Variable | Default Value | Description |
-| :--- | :--- | :--- |
-| `SPRING_DATASOURCE_URL` | `jdbc:postgresql://localhost:5432/repairmatch` | PostgreSQL JDBC connection URL |
-| `SPRING_DATASOURCE_USERNAME` | `${USER:postgres}` | Database user name |
-| `SPRING_DATASOURCE_PASSWORD` | *(empty)* | Database password |
-| `PORT` | `8080` | Backend HTTP listening port |
-| `JWT_SECRET` | *(secure dev default)* | 256-bit secret key for HMAC-SHA256 JWT signing |
-| `JWT_EXPIRATION_MS` | `86400000` | JWT token expiration time (24 hours) |
-| `CORS_ALLOWED_ORIGINS` | `http://localhost:5173,http://localhost:3000` | Allowed cross-origin frontend URLs |
-| `OTP_EXPIRATION_MINUTES`| `5` | Mobile OTP lifetime |
-| `OTP_COOLDOWN_SECONDS`  | `60` | Cooldown period between OTP requests |
-| `OTP_MAX_ATTEMPTS`      | `5` | Maximum failed verification attempts before lockout |
-| `SMS_PROVIDER`          | `dev` | SMS provider (`dev`, `twilio`, or `fast2sms`) |
-| `SMS_API_KEY`           | *(empty)* | Twilio Account SID or SMS API Key |
-| `SMS_API_SECRET`        | *(empty)* | Twilio Auth Token |
-| `SMS_SENDER_ID`         | `RepairMatch` | SMS Sender ID / Twilio phone number |
-| `PAYMENT_PROVIDER`      | `razorpay` | Payment provider (`razorpay` or `mock`) |
-| `RAZORPAY_KEY_ID`       | `rzp_test_mockKey123456` | Razorpay Key ID |
-| `RAZORPAY_KEY_SECRET`   | `mockSecretKey987654` | Razorpay Key Secret (Backend only) |
-| `RAZORPAY_CURRENCY`     | `INR` | Currency code for payment transactions |
-| `VITE_API_BASE_URL`     | `/api` (or `http://localhost:8080/api`) | Frontend API base URL |
+```
+┌─────────────────┐       ┌────────────────────────┐       ┌─────────────────┐
+│      users      │───1:N─│       addresses        │       │   categories    │
+│  (id, role,     │       │ (lat, lng, street)     │       │ (id, slug, icon)│
+│   password_hash)│       └────────────────────────┘       └────────┬────────┘
+└────────┬────────┘                                                 │ 1:N
+         │ 1:1                                             ┌────────┴────────┐
+┌────────┴────────┐       ┌────────────────────────┐       │  problem_types  │
+│technician_profiles│──1:N─│  technician_skills     │       │ (symptom, fee)  │
+│(radius, rating, │       │(categories, brands,    │       └─────────────────┘
+│ fee, kyc_status)│       │ problem_types)         │
+└────────┬────────┘       └────────────────────────┘
+         │ 1:N
+┌────────┴────────┐       ┌────────────────────────┐       ┌─────────────────┐
+│    bookings     │──1:N─│    booking_timeline    │       │     reviews     │
+│(status, amount, │       │ (state, timestamp)     │       │(rating 1-5,     │
+│ payment_status) │       └────────────────────────┘       │ customer review)│
+└────────┬────────┘                                        └─────────────────┘
+         │ 1:N
+┌────────┴────────┐       ┌────────────────────────┐
+│    payments     │       │   otp_verifications    │
+│ (provider,      │       │ (phone, otp_hash,      │
+│  order_id, sig) │       │  attempts, expires_at) │
+└─────────────────┘       └────────────────────────┘
+```
 
-> [!CAUTION]
-> **Never commit real credentials or private keys to version control.** Keep all production secrets strictly in your deployment environment or unversioned `.env` files.
+### Migration History:
+1. **`V1__init.sql`:** Core schema creation (`users`, `addresses`, `technician_profiles`, `categories`, `brands`, `models`, `problem_types`, `technician_categories`, `technician_brands`, `technician_problems`, `bookings`, `booking_timeline`, `reviews`).
+2. **`V2__domain_schema.sql`:** Performance indexes on geospatial coordinates (`latitude`, `longitude`), booking statuses, and technician ratings.
+3. **`V3__seed_data.sql`:** Idempotent seed data provisioning 16 repair categories, 16 major brands, models, common problem types, and 5 pre-configured demo user accounts across all platform roles.
+4. **`V4__payments_and_otp.sql`:** Schema additions for `otp_verifications` (rate limiting, BCrypt hash, cooldown timestamps) and `payments` (gateway orders, payment signatures, payment states).
 
 ---
 
-## 🚀 Local Setup Instructions
+## 👤 User Workflows
 
-### Prerequisites
-- **Java**: OpenJDK 21 or 23
-- **Node.js**: Node 18+ (tested on Node 23) and npm
-- **Database**: PostgreSQL 16+
-- **Build Tool**: Apache Maven 3.9+
+### 1. Customer Workflow
+```
+[Select Category] ➔ [Specify Brand & Model] ➔ [Choose Symptom] ➔ [Select Address & Slot] ➔ [Ranked Technicians] ➔ [Book Service] ➔ [Track Live State] ➔ [Pay Online via Razorpay] ➔ [Submit Review]
+```
+1. **Diagnosis:** Customer launches the 5-step Repair Diagnostic Wizard (`/wizard`).
+2. **Device Details:** For technical categories (e.g., Laptops, ACs), the customer selects their device brand and specific model. For trade services (Plumbing, Carpentry), brand selection is skipped automatically.
+3. **Problem Selection:** Customer picks the exact fault from common diagnosed problems with baseline cost estimates.
+4. **Location & Schedule:** Customer selects their saved address (or inputs latitude/longitude) and picks an appointment date and time slot.
+5. **Matched Recommendations:** Multi-factor matching engine evaluates all qualified candidates and returns ranked results with transparency badges.
+6. **Booking & Tracking:** Customer confirms the booking and monitors real-time status progressions (`/bookings`).
+7. **Payment & Review:** Upon job completion, customer pays online and submits a 1-to-5 star verified review.
 
-### 1. Database Initialization
+### 2. Technician Workflow
+```
+[Login / Register] ➔ [Submit KYC Details] ➔ [Toggle On-Duty] ➔ [Inspect Job Queue] ➔ [Accept / Reject] ➔ [Start Work] ➔ [Invoice & Complete] ➔ [Track Ratings]
+```
+1. **Onboarding:** Technicians register with their coverage radius, inspection rate, and domain skills. Initial profile status is set to `PENDING` approval.
+2. **Duty Toggle:** Verified technicians activate their availability toggle switch on `/technician` to start receiving match requests.
+3. **Job Dispatch:** Incoming booking requests appear in the technician console with problem details, device brand/model, address, and requested slot.
+4. **Job Execution:** Technician accepts the request, marks `In Progress` upon arrival, and logs final repair charges upon completion.
+5. **Reputation Monitoring:** Technicians view customer ratings and feedback transparently on their dashboard.
+
+### 3. Administrator Workflow
+```
+[Admin Console] ➔ [Review Platform Metrics] ➔ [Inspect Pending KYC] ➔ [Approve / Reject Credentials] ➔ [Manage User Directory]
+```
+1. **Platform Metrics:** Real-time visibility into total registered accounts, active technicians, total bookings, and platform activity.
+2. **KYC Document Verification:** Review technician government credentials and identity documents; approve or reject verification with a single action.
+3. **User Directory:** Filterable registry of customers, technicians, and administrators with account status inspection.
+
+---
+
+## 🧠 Intelligent Technician Matching Engine
+
+When a customer submits a repair request, the engine (`POST /api/matching/find`) processes all candidate technicians through a two-stage evaluation:
+
+```
++-----------------------------------------------------------------------+
+|                       Incoming Repair Request                         |
+|      (Category ID, Brand ID, Problem Type ID, Latitude, Longitude)    |
++-----------------------------------------------------------------------+
+                                   |
+                                   v
++-----------------------------------------------------------------------+
+|                       STAGE 1: HARD FILTERS                           |
+|  [x] Verification Gate:    technician.verification_status == VERIFIED |
+|  [x] Duty Gate:            technician.is_available == true           |
+|  [x] Category Gate:        technician covers selected category_id     |
+|  [x] Proximity Gate:       Haversine distance <= service_radius_km    |
+|  [x] Schedule Gate:        no conflicting booking in requested slot   |
++-----------------------------------------------------------------------+
+                                   | (Candidates passing all gates)
+                                   v
++-----------------------------------------------------------------------+
+|                    STAGE 2: MULTI-FACTOR SCORING                      |
+|                                                                       |
+|  Factor                     Weight   Computation Method               |
+|  -------------------------------------------------------------------  |
+|  Brand Specialization        25%     Has brand in skill profile       |
+|  Problem Expertise           20%     Has problem in skill profile     |
+|  Geographical Proximity      20%     Linear decay: 1 - (dist / radius)|
+|  Customer Rating Average     15%     Linear scale: (rating / 5.0) * 15|
+|  Completed Job Track Record  10%     Tiered: >=50: 10, >=20: 7, >=5: 4|
+|  Pricing Competitiveness     10%     Ratio: category_avg / fee        |
++-----------------------------------------------------------------------+
+                                   |
+                                   v
++-----------------------------------------------------------------------+
+|                   FINAL SCORE (0 - 100%) + BADGES                     |
+|  • "Brand Specialist"   • "Nearby (X km)"   • "Top Rated 4.9★"        |
++-----------------------------------------------------------------------+
+```
+
+### Proximity Calculation (Haversine Formula)
+Geographic distance $d$ between customer coordinates $(\phi_1, \lambda_1)$ and technician coordinates $(\phi_2, \lambda_2)$ is calculated in `GeoUtils.java`:
+$$a = \sin^2\left(\frac{\Delta\phi}{2}\right) + \cos(\phi_1)\cos(\phi_2)\sin^2\left(\frac{\Delta\lambda}{2}\right)$$
+$$d = 2 \cdot R \cdot \text{atan2}\left(\sqrt{a}, \sqrt{1-a}\right) \quad \text{where } R = 6371 \text{ km}$$
+
+---
+
+## 🔄 Booking Lifecycle State Machine
+
+Bookings follow a formal, validated state machine enforced by `BookingStateMachine.java`.
+
+### Valid Transition Matrix:
+
+| From State | Allowed Target State | Triggering Role | Automated Side Effects |
+| :--- | :--- | :--- | :--- |
+| `PENDING` | `ACCEPTED` | Technician | Adds `ACCEPTED` timeline entry |
+| `PENDING` | `REJECTED` | Technician | Frees up schedule slot |
+| `PENDING` | `CANCELLED` | Customer | Cancels booking before technician confirmation |
+| `ACCEPTED` | `IN_PROGRESS` | Technician | Updates service start timestamp |
+| `ACCEPTED` | `CANCELLED` | Customer | Cancels booking before technician arrival |
+| `IN_PROGRESS` | `COMPLETED` | Technician | Increments technician `completed_jobs_count`, unlocks review eligibility |
+| `COMPLETED` | *(Terminal)* | — | Read-only state; eligible for verified customer review |
+| `CANCELLED` | *(Terminal)* | — | Read-only state |
+| `REJECTED` | *(Terminal)* | — | Read-only state |
+
+*Any unauthorized or illegal state transition attempts immediately return `400 Bad Request`.*
+
+---
+
+## 🔐 Authentication & Security
+
+- **Stateless JWT Authorization:** Every authenticated request requires a Bearer JWT in the `Authorization` header. Tokens are signed with HMAC-SHA256 using `app.jwt.secret` (minimum 256 bits).
+- **BCrypt Password Hashing:** Passwords are never stored in plaintext; all user credentials use salted BCrypt password hashing.
+- **Role-Based Access Control (RBAC):** Every API endpoint is secured with Spring Security annotations (`@PreAuthorize("hasRole('ROLE_...')")`).
+- **CORS Defense:** CORS policy explicitly restricts allowed origins (`CORS_ALLOWED_ORIGINS`) to authorized frontend clients.
+
+---
+
+## 📱 Mobile OTP Architecture
+
+RepairMatch provides secure, production-ready phone-number authentication for customers and technicians alongside standard email sign-in.
+
+```
+[User Browser]                      [Backend AuthService]               [PostgreSQL Database]
+      │                                       │                                   │
+      │── 1. POST /api/auth/otp/send ────────>│                                   │
+      │      (phone: "9876543210")            │── 2. Validate Indian phone format │
+      │                                       │── 3. Check 60s cooldown ─────────>│
+      │                                       │── 4. Generate SecureRandom OTP    │
+      │                                       │── 5. Hash OTP with BCrypt         │
+      │                                       │── 6. Persist hash & expiry ──────>│
+      │                                       │── 7. Dispatch SMS (Twilio / Dev)  │
+      │<── 8. Return 200 OK (no OTP in body)──│                                   │
+      │                                       │                                   │
+      │── 9. POST /api/auth/otp/verify ──────>│                                   │
+      │      (phone & 6-digit code)           │── 10. Fetch active record ───────>│
+      │                                       │── 11. Check expiry & attempts     │
+      │                                       │── 12. BCrypt matches check        │
+      │                                       │   [If invalid: increment count]   │
+      │                                       │   [If valid: mark is_verified]───>│
+      │<── 13. Return 200 OK with Bearer JWT ─│                                   │
+```
+
+### Security Safeguards:
+1. **Zero Plaintext OTP Storage:** Verification codes are hashed with BCrypt prior to persistence in `otp_verifications`.
+2. **Indian Phone Number Validation:** Enforces standard 10-digit mobile numbering starting with 6, 7, 8, or 9 (`^[6-9]\d{9}$`).
+3. **Resend Cooldown:** Strict 60-second cooldown enforced at both database and frontend UI levels.
+4. **Brute-Force Rate Limiting:** Verifications are locked after 5 failed attempts (`OTP_MAX_ATTEMPTS`).
+5. **Single-Use Invalidation:** Successful verification marks `is_verified = true` immediately, preventing replay attacks.
+6. **Zero Secret Leaks:** OTP values are never returned in HTTP responses or written to production logs.
+7. **SMS Provider Abstraction:** Configurable `SmsOtpProvider` interface enables instant switching between local dev simulation (`dev`) and live SMS gateways (`twilio`, `fast2sms`).
+
+---
+
+## 💳 Online Payment Architecture (Razorpay)
+
+Payment for technician inspection and repair services uses Razorpay with cryptographic backend verification:
+
+```
+[Customer Browser]                     [Backend API]                    [Razorpay Gateway]
+        │                                    │                                  │
+        │── 1. POST /api/payments/create-ord>│                                  │
+        │      (bookingId)                   │── 2. Verify ownership & amount   │
+        │                                    │── 3. Generate Order ID ─────────>│
+        │                                    │── 4. Create PENDING in DB        │
+        │<── 5. Return order details & key ──│                                  │
+        │                                    │                                  │
+        │── 6. Open Razorpay Checkout Modal ───────────────────────────────────>│
+        │<── 7. Receive payment callback (order_id, payment_id, signature) ─────│
+        │                                    │                                  │
+        │── 8. POST /api/payments/verify ───>│                                  │
+        │      (paymentId, orderId, sig)     │── 9. Compute HMAC-SHA256 digest  │
+        │                                    │── 10. Constant-time equality check│
+        │                                    │── 11. Update payment: PAID       │
+        │                                    │── 12. Update booking: PAID       │
+        │                                    │── 13. Append timeline audit log  │
+        │<── 14. 200 OK Verified Receipt ────│                                  │
+```
+
+### Key Technical Details:
+- **Cryptographic Verification:** Signatures are computed via standard Java `javax.crypto.Mac` (`HmacSHA256`) and compared in constant time (`MessageDigest.isEqual`) to protect against timing attacks.
+- **Idempotent Handling:** Duplicate callbacks for already-verified payments return the existing `PAID` record safely without duplicate accounting.
+- **Payment Lifecycle States:** Tracks `PENDING`, `AUTHORIZED`, `PAID`, `FAILED`, `REFUNDED`, and `CANCELLED`.
+- **Audit Integration:** Payment confirmations automatically advance booking payment indicators and write audit events to `booking_timeline`.
+
+---
+
+## 🚀 Local Setup & Getting Started
+
+### System Prerequisites
+- **Java Development Kit:** OpenJDK 21 or 23
+- **Node.js:** Node.js 18+ (tested on Node 23) and npm
+- **Database:** PostgreSQL 16+
+- **Build Tool:** Apache Maven 3.9+
+
+---
+
+### Step 1: Database Initialization
 Ensure PostgreSQL is running and create the `repairmatch` database:
 ```bash
 # macOS (Homebrew)
 brew services start postgresql@16
 createdb repairmatch
 
-# Linux
+# Linux (Ubuntu / Debian)
 sudo systemctl start postgresql
 sudo -u postgres createdb repairmatch
 ```
-*Flyway will automatically apply all migrations (`V1` to `V4`) and seed baseline test data on initial backend startup.*
+*Flyway automatically executes migrations `V1` through `V4` on the initial backend start.*
 
 ---
 
-### 2. Running via Development Script (Recommended)
-A zero-config script starts both services and monitors their health:
+### Step 2: Environment Configuration
+Copy the configuration template to `.env`:
+```bash
+cp .env.example .env
+```
+*(Optionally review and customize database credentials or ports in `.env`).*
+
+---
+
+### Step 3: Run the Development Stack
+
+#### Option A: One-Command Startup (Recommended)
+A zero-dependency bash script starts PostgreSQL, compiles and launches the Spring Boot backend, starts Vite, and verifies health:
 ```bash
 chmod +x start-dev.sh
 ./start-dev.sh
 ```
 
----
+#### Option B: Manual Startup (Two Terminals)
 
-### 3. Running Services Manually
-
-#### Backend (Spring Boot):
+**Terminal 1 — Spring Boot Backend:**
 ```bash
 cd backend
 mvn spring-boot:run
 ```
 - API Base: `http://localhost:8080`
-- Health Check: `http://localhost:8080/api/health`
+- Health Endpoint: `http://localhost:8080/api/health`
 
-#### Frontend (React + Vite):
+**Terminal 2 — React Vite Frontend:**
 ```bash
 cd frontend
 npm install
@@ -433,107 +503,187 @@ npm run dev
 
 ---
 
-## 👥 Pre-Seeded Demo Accounts
+## 👥 Pre-Seeded Test Accounts
 
-The database includes active accounts with pre-populated repair histories:
+The seed migration (`V3__seed_data.sql`) pre-configures test accounts for all roles. The frontend login page includes convenient **1-Click Quick Demo Login** buttons:
 
 | Role | Email | Phone Number | Password | Profile Highlights |
 | :--- | :--- | :--- | :--- | :--- |
-| **Customer** | `rahul@gmail.com` | `9876543210` | `password123` | Active customer with saved Bengaluru addresses and bookings |
-| **Technician (Electronics)** | `rajesh.tech@repairmatch.com` | `9811122233` | `password123` | Apple & Dell certified specialist (4.9★ rating, 126 jobs) |
-| **Technician (Appliances)** | `amit.tech@repairmatch.com` | `9822233344` | `password123` | Daikin & LG HVAC/cooling expert (4.7★ rating, 94 jobs) |
-| **Technician (Plumbing)** | `vikram.plumber@repairmatch.com` | `9833344455` | `password123` | Master plumber for residential pipe & pump repairs (4.8★) |
-| **Admin** | `admin@repairmatch.com` | `9999900001` | `password123` | Platform operations manager with KYC approval console |
-
-*The login screen (`/login`) includes 1-click test credentials for instant sign-in via both email and phone OTP modes.*
+| **Customer** | `rahul@gmail.com` | `9876543210` | `password123` | Active customer with saved Bengaluru addresses and active bookings |
+| **Technician (Electronics)** | `rajesh.tech@repairmatch.com` | `9811122233` | `password123` | Apple & Dell certified specialist (4.9★ rating, 126 completed repairs) |
+| **Technician (Appliances)** | `amit.tech@repairmatch.com` | `9822233344` | `password123` | Daikin, LG & Samsung HVAC/cooling master (4.7★ rating, 94 repairs) |
+| **Technician (Plumbing)** | `vikram.plumber@repairmatch.com` | `9833344455` | `password123` | Master plumber for residential pipe, leak & pump repairs (4.8★ rating) |
+| **Administrator** | `admin@repairmatch.com` | `9999900001` | `password123` | Platform operations manager with KYC approval and user consoles |
 
 ---
 
-## 🔌 API Endpoints Reference
+## ⚙️ Environment Variables Reference
 
-### Authentication & Profile
-- `POST /api/auth/register` — Register a new customer or technician account
-- `POST /api/auth/login` — Authenticate via email/password and obtain JWT
+| Variable | Default Value | Description |
+| :--- | :--- | :--- |
+| `SPRING_DATASOURCE_URL` | `jdbc:postgresql://localhost:5432/repairmatch` | JDBC connection string |
+| `SPRING_DATASOURCE_USERNAME` | `${USER:postgres}` | Database user |
+| `SPRING_DATASOURCE_PASSWORD` | *(empty)* | Database password |
+| `PORT` | `8080` | Backend HTTP listening port |
+| `JWT_SECRET` | `404E6352...` *(dev default)* | 256-bit secret key for HMAC-SHA256 JWT signing |
+| `JWT_EXPIRATION_MS` | `86400000` | JWT token lifetime (24 hours) |
+| `CORS_ALLOWED_ORIGINS` | `http://localhost:5173,http://localhost:3000` | Allowed frontend origins |
+| `OTP_EXPIRATION_MINUTES`| `5` | OTP validity window |
+| `OTP_COOLDOWN_SECONDS`  | `60` | Minimum wait between OTP resends |
+| `OTP_MAX_ATTEMPTS`      | `5` | Failed attempts before lockout |
+| `SMS_PROVIDER`          | `dev` | SMS provider (`dev`, `twilio`, `fast2sms`) |
+| `SMS_API_KEY`           | *(empty)* | Twilio Account SID or SMS API Key |
+| `SMS_API_SECRET`        | *(empty)* | Twilio Auth Token |
+| `SMS_SENDER_ID`         | `RepairMatch` | SMS Sender ID / phone number |
+| `PAYMENT_PROVIDER`      | `razorpay` | Payment provider (`razorpay` or `mock`) |
+| `RAZORPAY_KEY_ID`       | `rzp_test_mockKey123456` | Razorpay Key ID |
+| `RAZORPAY_KEY_SECRET`   | `mockSecretKey987654` | Razorpay Key Secret (Backend only) |
+| `RAZORPAY_CURRENCY`     | `INR` | Transaction currency |
+| `VITE_API_BASE_URL`     | `http://localhost:8080/api` | Frontend API client base URL |
+
+---
+
+## 🔌 REST API Reference
+
+### Authentication & Identification
+- `POST /api/auth/register` — Register a new customer or technician
+- `POST /api/auth/login` — Authenticate via email/password and receive JWT
 - `POST /api/auth/otp/send` — Request a time-limited verification OTP
-- `POST /api/auth/otp/verify` — Verify phone OTP and obtain JWT
+- `POST /api/auth/otp/verify` — Verify phone OTP and receive JWT
+- `POST /api/auth/otp/resend` — Resend OTP subject to 60-second cooldown
 - `GET /api/auth/me` — Retrieve authenticated user profile
-- `GET /api/health` — Platform health check
+- `GET /api/health` — Service health check endpoint
 
-### Catalog & Discovery
+### Catalog & Categories
 - `GET /api/catalog/categories` — List all 16 repair categories
-- `GET /api/catalog/categories/{id}` — Category details with brands and symptoms
+- `GET /api/catalog/categories/{id}` — Category details with brands & problem types
 - `GET /api/catalog/brands/{brandId}/models` — Device models for a brand
 - `GET /api/catalog/categories/{categoryId}/problems` — Common symptoms for a category
 
-### Matching Engine
+### Matching & Discovery
 - `POST /api/matching/find` — Execute two-stage algorithmic technician matching
+- `GET /api/technicians/public/{id}` — Public profile and customer reviews for a technician
 
 ### Booking Lifecycle
-- `POST /api/bookings` — Create a repair request
-- `GET /api/bookings/{id}` — Booking details and event timeline
-- `GET /api/bookings/customer` — List customer bookings
+- `POST /api/bookings` — Create a new repair request
+- `GET /api/bookings/{id}` — Retrieve booking details and timeline
+- `GET /api/bookings/customer` — List active and past customer bookings
 - `GET /api/bookings/technician` — List technician job queue
-- `PUT /api/bookings/{id}/status` — Advance booking state (`ACCEPTED`, `IN_PROGRESS`, `COMPLETED`, `REJECTED`)
+- `PUT /api/bookings/{id}/status` — Advance booking state machine
 - `POST /api/bookings/{id}/cancel` — Cancel active booking
 
-### Payments
-- `POST /api/payments/create-order` — Create payment gateway order for booking
+### Online Payments
+- `POST /api/payments/create-order` — Generate Razorpay payment order
 - `POST /api/payments/verify` — Cryptographically verify HMAC-SHA256 signature
-- `POST /api/payments/fail` — Record payment failure
-- `GET /api/payments/booking/{bookingId}` — Retrieve booking payment status
+- `POST /api/payments/fail` — Record failed payment attempt
+- `GET /api/payments/booking/{bookingId}` — Get payment status for booking
 
-### Reviews & Management
+### Reviews & Reputation
 - `POST /api/reviews` — Submit verified customer review
 - `GET /api/reviews/technician/{id}` — Public reviews for a technician
-- `PATCH /api/technician/availability` — Toggle technician on-duty status
-- `GET /api/admin/stats` — Platform summary metrics
+
+### Technician & Admin Operations
+- `GET /api/technician/profile` / `PUT /api/technician/profile` — Technician profile
+- `PATCH /api/technician/availability` — Toggle on-duty availability
+- `GET /api/admin/stats` — Platform metrics summary
 - `GET /api/admin/technicians/pending` — Unverified technicians awaiting KYC check
-- `PUT /api/admin/technicians/{id}/verify` — Approve or reject technician KYC
+- `PUT /api/admin/technicians/{id}/verify` — Approve or reject technician credentials
+- `GET /api/admin/users` — User directory
 
 ---
 
 ## 🧪 Testing & Verification
 
 ### Automated Backend Tests
-Run the entire JUnit 5 test suite (utilizes an in-memory H2 database with PostgreSQL compatibility mode):
+Run the entire JUnit 5 test suite (utilizes an isolated in-memory H2 database with PostgreSQL compatibility mode):
 ```bash
 cd backend
-mvn clean test
+mvn test
 ```
 **Results:** **42 of 42 tests passing** (`BUILD SUCCESS`).
 
-**Test Breakdown:**
-- `DomainModelAndSeedDataTest` (4 tests) — Flyway migration, seeds, password encryption.
-- `AuthControllerTest` (5 tests) — Customer/technician registration, duplicate rejection, JWT validation.
-- `OtpAuthenticationTest` (8 tests) — Secure code generation, attempt limits, lockout, cooldown, invalidation.
-- `PaymentWorkflowTest` (7 tests) — Order creation, HMAC signature verification, idempotency, failure states.
-- `MatchingEngineTest` (5 tests) — Hard filters, distance decay, brand boosts, schedule conflict exclusion.
-- `BookingLifecycleTest` (2 tests) — State transitions, terminal states, and illegal jump prevention.
-- `ReviewWorkflowTest` (2 tests) — Duplicate prevention, completed-state requirements, rating recalculation.
-- `EndToEndRepairJourneyTest` (1 test) — Comprehensive end-to-end integration flow.
-- Other controller & health tests (8 tests).
+```
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 42, Failures: 0, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+```
+
+### Test Suite Coverage:
+- `OtpAuthenticationTest` (8 tests) — Code generation, verification, attempt decrement, lockout at 5 failures, cooldown enforcement, single-use invalidation, Indian phone number format validation.
+- `PaymentWorkflowTest` (7 tests) — Order creation, cryptographic HMAC-SHA256 signature verification, tamper rejection, duplicate callback idempotency, failure recording, authorization checks.
+- `MatchingEngineTest` (5 tests) — Hard filters (KYC, duty, radius, slot conflicts) and weighted scoring calibration.
+- `BookingLifecycleTest` (2 tests) — Forward transitions and illegal state jump rejection.
+- `ReviewWorkflowTest` (2 tests) — Rating recalculation, duplicate review guards, and completed booking requirements.
+- `AuthControllerTest` (5 tests) — Customer and technician registration, bad credentials handling, JWT issuance.
+- `CatalogControllerTest` (4 tests) — Category, brand, model, and symptom hierarchy.
+- `DomainModelAndSeedDataTest` (4 tests) — Flyway migration execution, seeds, BCrypt encryption.
+- `CustomerAndTechnicianControllerTest` (3 tests) — Address books, profile updates, on-duty toggles.
+- `EndToEndRepairJourneyTest` (1 test) — Comprehensive multi-step flow from diagnosis to payment and review.
+- `HealthControllerTest` (1 test) — Actuator health check verification.
 
 ### Frontend Production Build
-Compile and package the frontend application:
+Compile and verify the React production bundle:
 ```bash
 cd frontend
 npm run build
 ```
-**Result:** Clean Vite production build with zero errors.
+**Result:** Built cleanly in 1.25s with 0 errors or warnings.
+
+---
+
+## 🚢 Production Deployment Guide
+
+### 1. Docker Containerization (Blueprint)
+
+**Backend `Dockerfile`:**
+```dockerfile
+FROM eclipse-temurin:21-jre-alpine
+VOLUME /tmp
+COPY backend/target/*.jar app.jar
+ENTRYPOINT ["java","-jar","/app.jar"]
+```
+
+**Frontend `Dockerfile`:**
+```dockerfile
+FROM node:20-alpine AS build
+WORKDIR /app
+COPY frontend/package*.json ./
+RUN npm install
+COPY frontend/ ./
+RUN npm run build
+
+FROM nginx:alpine
+COPY --from=build /app/dist /usr/share/nginx/html
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
+```
+
+### 2. Cloud Deployment Topology
+- **Database:** Managed PostgreSQL (e.g., AWS RDS, Supabase, Neon).
+- **Backend API:** Containerized deployment on Render, Railway, AWS ECS, or Fly.io with environment variable injection.
+- **Frontend SPA:** Static host on Vercel, Netlify, or Cloudflare Pages with API proxying.
+- **SMS Gateway:** Configure Twilio Account SID, Auth Token, and registered Sender ID in production environment variables.
+- **Payment Gateway:** Configure Razorpay Live Key ID and Live Key Secret with HTTPS webhooks.
 
 ---
 
 ## 🔮 Future Roadmap
 
-- [ ] **Live WebSockets / Push Notifications:** Instant alert dispatch to technicians when a new matching job arrives.
-- [ ] **Parts Inventory Tracker:** Allow technicians to log specific spare parts used during repairs for detailed customer invoices.
-- [ ] **Native Mobile Apps:** React Native iOS/Android builds for field technicians with real-time GPS location tracking.
-- [ ] **Automated Payouts:** Direct settlement from platform escrow to technician bank accounts upon job sign-off.
+- [ ] **Real-Time WebSocket Dispatch:** Instant alert dispatch to on-duty technicians when a matching job is requested.
+- [ ] **Spare Parts Inventory Tracking:** In-app parts catalogue allowing technicians to itemize replacement parts on invoices.
+- [ ] **Native Mobile Application:** React Native / Flutter builds for field technicians with continuous background GPS tracking.
+- [ ] **Automated Escrow Settlements:** Automated payout release from platform escrow to technician bank accounts upon customer job sign-off.
 
 ---
 
-## 👨‍💻 Author
+## 👨‍💻 Author & Contact
 
 **Abhishek Mishra**  
-- Portfolio / GitHub: Ready for submission  
-- Specialization: Full-Stack Engineering, Distributed Systems, Spring Boot & React
+- **GitHub:** [@Abhi007500](https://github.com/Abhi007500)  
+- **Repository:** [https://github.com/Abhi007500/RepairMatch](https://github.com/Abhi007500/RepairMatch)  
+- **Role:** Full-Stack Software Engineer  
+- **Specialization:** Spring Boot, Distributed Systems, React, High-Reliability Architecture
