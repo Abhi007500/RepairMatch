@@ -1,0 +1,47 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: repairmatch-backend-test
+  datasource:
+    url: jdbc:h2:mem:repairmatch;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: 
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    open-in-view: false
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+
+app:
+  jwt:
+    secret: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+    expiration-ms: 86400000
+  cors:
+    allowed-origins: http://localhost:5173,http://localhost:3000
+  otp:
+    expiration-minutes: 5
+    cooldown-seconds: 60
+    max-attempts: 5
+    allow-demo-fallback: true
+  sms:
+    provider: dev
+    sender-id: RepairMatch
+  payment:
+    provider: razorpay
+    razorpay:
+      key-id: rzp_test_mockKey123456
+      key-secret: mockSecretKey987654
+      currency: INR
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
