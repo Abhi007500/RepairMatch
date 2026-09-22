@@ -1,39 +1,34 @@
 package com.repairmatch.modules.user.domain;
 
-import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.Document;
+
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "users")
+@Document(collection = "users")
 public class User {
 
     @Id
-    @Column(name = "id", length = 36, nullable = false)
     private String id;
 
-    @Column(name = "email", length = 150, nullable = false, unique = true)
+    @Indexed(unique = true)
     private String email;
 
-    @Column(name = "password_hash", length = 255, nullable = false)
     private String passwordHash;
 
-    @Column(name = "full_name", length = 100, nullable = false)
     private String fullName;
 
-    @Column(name = "phone_number", length = 20)
+    @Indexed
     private String phoneNumber;
 
-    @Column(name = "role", length = 20, nullable = false)
     private String role; // CUSTOMER, TECHNICIAN, ADMIN
 
-    @Column(name = "is_active", nullable = false)
     private boolean active = true;
 
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
+    private LocalDateTime createdAt = LocalDateTime.now();
 
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
+    private LocalDateTime updatedAt = LocalDateTime.now();
 
     public User() {}
 
@@ -47,17 +42,6 @@ public class User {
         this.active = true;
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
-    }
-
-    @PrePersist
-    public void prePersist() {
-        if (createdAt == null) createdAt = LocalDateTime.now();
-        if (updatedAt == null) updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    public void preUpdate() {
-        updatedAt = LocalDateTime.now();
     }
 
     // Getters and Setters

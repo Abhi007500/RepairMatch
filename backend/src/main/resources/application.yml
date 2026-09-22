@@ -6,23 +6,11 @@ server:
 spring:
   application:
     name: repairmatch-backend
-  datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/repairmatch}
-    driver-class-name: ${SPRING_DATASOURCE_DRIVER:org.postgresql.Driver}
-    username: ${SPRING_DATASOURCE_USERNAME:${USER:postgres}}
-    password: ${SPRING_DATASOURCE_PASSWORD:}
-  jpa:
-    hibernate:
-      ddl-auto: validate
-    show-sql: false
-    properties:
-      hibernate:
-        format_sql: true
-    open-in-view: false
-  flyway:
-    enabled: true
-    baseline-on-migrate: true
-    locations: classpath:db/migration
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27017/repairmatch}
+      database: ${MONGODB_DATABASE:repairmatch}
+      auto-index-creation: true
 
 app:
   jwt:

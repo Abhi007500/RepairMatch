@@ -1,45 +1,60 @@
 package com.repairmatch.modules.catalog.domain;
 
-import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.DBRef;
+import org.springframework.data.mongodb.core.mapping.Document;
+
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "models")
+@Document(collection = "models")
 public class Model {
 
     @Id
-    @Column(name = "id", length = 36, nullable = false)
     private String id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "brand_id", nullable = false)
+    @DBRef
     private Brand brand;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "category_id", nullable = false)
+    @Indexed
+    private String brandId;
+
+    @DBRef
     private Category category;
 
-    @Column(name = "name", length = 150, nullable = false)
+    @Indexed
+    private String categoryId;
+
     private String name;
 
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
+    private LocalDateTime createdAt = LocalDateTime.now();
 
     public Model() {}
-
-    @PrePersist
-    public void prePersist() {
-        if (createdAt == null) createdAt = LocalDateTime.now();
-    }
 
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
 
     public Brand getBrand() { return brand; }
-    public void setBrand(Brand brand) { this.brand = brand; }
+    public void setBrand(Brand brand) {
+        this.brand = brand;
+        if (brand != null) {
+            this.brandId = brand.getId();
+        }
+    }
+
+    public String getBrandId() { return brandId; }
+    public void setBrandId(String brandId) { this.brandId = brandId; }
 
     public Category getCategory() { return category; }
-    public void setCategory(Category category) { this.category = category; }
+    public void setCategory(Category category) {
+        this.category = category;
+        if (category != null) {
+            this.categoryId = category.getId();
+        }
+    }
+
+    public String getCategoryId() { return categoryId; }
+    public void setCategoryId(String categoryId) { this.categoryId = categoryId; }
 
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }

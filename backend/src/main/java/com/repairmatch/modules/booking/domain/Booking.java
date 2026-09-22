@@ -7,92 +7,87 @@ import com.repairmatch.modules.catalog.domain.ProblemType;
 import com.repairmatch.modules.technician.domain.TechnicianProfile;
 import com.repairmatch.modules.user.domain.Address;
 import com.repairmatch.modules.user.domain.User;
-import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Version;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.index.CompoundIndexes;
+import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.DBRef;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "bookings")
+@Document(collection = "bookings")
+@CompoundIndexes({
+    @CompoundIndex(name = "booking_slot_conflict_idx", def = "{'technicianId': 1, 'scheduledDate': 1, 'timeSlot': 1, 'status': 1}"),
+    @CompoundIndex(name = "booking_cust_created_idx", def = "{'customerId': 1, 'createdAt': -1}"),
+    @CompoundIndex(name = "booking_tech_created_idx", def = "{'technicianId': 1, 'createdAt': -1}")
+})
 public class Booking {
 
     @Id
-    @Column(name = "id", length = 36, nullable = false)
     private String id;
 
-    @Column(name = "booking_reference", length = 50, nullable = false, unique = true)
+    @Indexed(unique = true)
     private String bookingReference;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "customer_id", nullable = false)
+    @DBRef
     private User customer;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "technician_id", nullable = false)
+    @Indexed
+    private String customerId;
+
+    @DBRef
     private TechnicianProfile technician;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "category_id", nullable = false)
+    @Indexed
+    private String technicianId;
+
+    @DBRef
     private Category category;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "brand_id")
+    @Indexed
+    private String categoryId;
+
+    @DBRef
     private Brand brand;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "model_id")
+    @DBRef
     private Model model;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "problem_type_id")
+    @DBRef
     private ProblemType problemType;
 
-    @Column(name = "problem_description", length = 1000, nullable = false)
     private String problemDescription;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "address_id", nullable = false)
+    @DBRef
     private Address address;
 
-    @Column(name = "scheduled_date", length = 20, nullable = false)
+    @Indexed
     private String scheduledDate;
 
-    @Column(name = "time_slot", length = 50, nullable = false)
+    @Indexed
     private String timeSlot;
 
-    @Column(name = "status", length = 30, nullable = false)
+    @Indexed
     private String status; // PENDING, ACCEPTED, REJECTED, IN_PROGRESS, COMPLETED, CANCELLED
 
-    @Column(name = "inspection_fee", nullable = false)
     private BigDecimal inspectionFee;
-
-    @Column(name = "final_amount")
     private BigDecimal finalAmount;
 
-    @Column(name = "payment_status", length = 30, nullable = false)
+    @Indexed
     private String paymentStatus = "PENDING"; // PENDING, PAID, REFUNDED
 
-    @Column(name = "cancellation_reason", length = 500)
     private String cancellationReason;
 
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
+    private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime updatedAt = LocalDateTime.now();
 
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
+    @Version
+    private Long version;
 
     public Booking() {}
-
-    @PrePersist
-    public void prePersist() {
-        if (createdAt == null) createdAt = LocalDateTime.now();
-        if (updatedAt == null) updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    public void preUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
 
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
@@ -101,13 +96,37 @@ public class Booking {
     public void setBookingReference(String bookingReference) { this.bookingReference = bookingReference; }
 
     public User getCustomer() { return customer; }
-    public void setCustomer(User customer) { this.customer = customer; }
+    public void setCustomer(User customer) {
+        this.customer = customer;
+        if (customer != null) {
+            this.customerId = customer.getId();
+        }
+    }
+
+    public String getCustomerId() { return customerId; }
+    public void setCustomerId(String customerId) { this.customerId = customerId; }
 
     public TechnicianProfile getTechnician() { return technician; }
-    public void setTechnician(TechnicianProfile technician) { this.technician = technician; }
+    public void setTechnician(TechnicianProfile technician) {
+        this.technician = technician;
+        if (technician != null) {
+            this.technicianId = technician.getId();
+        }
+    }
+
+    public String getTechnicianId() { return technicianId; }
+    public void setTechnicianId(String technicianId) { this.technicianId = technicianId; }
 
     public Category getCategory() { return category; }
-    public void setCategory(Category category) { this.category = category; }
+    public void setCategory(Category category) {
+        this.category = category;
+        if (category != null) {
+            this.categoryId = category.getId();
+        }
+    }
+
+    public String getCategoryId() { return categoryId; }
+    public void setCategoryId(String categoryId) { this.categoryId = categoryId; }
 
     public Brand getBrand() { return brand; }
     public void setBrand(Brand brand) { this.brand = brand; }
@@ -150,4 +169,7 @@ public class Booking {
 
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+
+    public Long getVersion() { return version; }
+    public void setVersion(Long version) { this.version = version; }
 }

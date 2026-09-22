@@ -1,19 +1,20 @@
 package com.repairmatch.modules.auth.repository;
 
 import com.repairmatch.modules.auth.domain.OtpVerification;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
+import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface OtpVerificationRepository extends JpaRepository<OtpVerification, String> {
+public interface OtpVerificationRepository extends MongoRepository<OtpVerification, String> {
 
-    @Query("SELECT o FROM OtpVerification o WHERE o.phoneNumber = :phoneNumber AND o.verified = false ORDER BY o.createdAt DESC")
-    List<OtpVerification> findActiveVerifications(@Param("phoneNumber") String phoneNumber);
+    List<OtpVerification> findByPhoneNumberAndVerifiedFalseOrderByCreatedAtDesc(String phoneNumber);
+
+    default List<OtpVerification> findActiveVerifications(String phoneNumber) {
+        return findByPhoneNumberAndVerifiedFalseOrderByCreatedAtDesc(phoneNumber);
+    }
 
     default Optional<OtpVerification> findLatestActive(String phoneNumber) {
         List<OtpVerification> list = findActiveVerifications(phoneNumber);

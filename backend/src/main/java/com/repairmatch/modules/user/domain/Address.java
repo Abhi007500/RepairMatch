@@ -1,56 +1,48 @@
 package com.repairmatch.modules.user.domain;
 
-import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.DBRef;
+import org.springframework.data.mongodb.core.mapping.Document;
+
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "addresses")
+@Document(collection = "addresses")
 public class Address {
 
     @Id
-    @Column(name = "id", length = 36, nullable = false)
     private String id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
+    @DBRef
     private User user;
 
-    @Column(name = "street", length = 255, nullable = false)
+    @Indexed
+    private String userId;
+
     private String street;
-
-    @Column(name = "city", length = 100, nullable = false)
     private String city;
-
-    @Column(name = "state", length = 100, nullable = false)
     private String state;
-
-    @Column(name = "postal_code", length = 20, nullable = false)
     private String postalCode;
-
-    @Column(name = "latitude", nullable = false)
     private double latitude;
-
-    @Column(name = "longitude", nullable = false)
     private double longitude;
-
-    @Column(name = "is_default", nullable = false)
     private boolean isDefault;
-
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
+    private LocalDateTime createdAt = LocalDateTime.now();
 
     public Address() {}
-
-    @PrePersist
-    public void prePersist() {
-        if (createdAt == null) createdAt = LocalDateTime.now();
-    }
 
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
 
     public User getUser() { return user; }
-    public void setUser(User user) { this.user = user; }
+    public void setUser(User user) {
+        this.user = user;
+        if (user != null) {
+            this.userId = user.getId();
+        }
+    }
+
+    public String getUserId() { return userId; }
+    public void setUserId(String userId) { this.userId = userId; }
 
     public String getStreet() { return street; }
     public void setStreet(String street) { this.street = street; }

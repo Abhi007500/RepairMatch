@@ -2,58 +2,57 @@ package com.repairmatch.modules.payment.domain;
 
 import com.repairmatch.modules.booking.domain.Booking;
 import com.repairmatch.modules.user.domain.User;
-import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.index.CompoundIndexes;
+import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.DBRef;
+import org.springframework.data.mongodb.core.mapping.Document;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "payments")
+@Document(collection = "payments")
+@CompoundIndexes({
+    @CompoundIndex(name = "payment_booking_created_idx", def = "{'bookingId': 1, 'createdAt': -1}")
+})
 public class Payment {
 
     @Id
-    @Column(name = "id", length = 36, nullable = false)
     private String id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "booking_id", nullable = false)
+    @DBRef
     private Booking booking;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "customer_id", nullable = false)
+    @Indexed
+    private String bookingId;
+
+    @DBRef
     private User customer;
 
-    @Column(name = "amount", nullable = false)
+    @Indexed
+    private String customerId;
+
     private BigDecimal amount;
-
-    @Column(name = "currency", length = 10, nullable = false)
     private String currency = "INR";
-
-    @Column(name = "payment_method", length = 50, nullable = false)
     private String paymentMethod = "RAZORPAY";
 
-    @Column(name = "payment_status", length = 30, nullable = false)
+    @Indexed
     private String paymentStatus = "PENDING"; // PENDING, AUTHORIZED, PAID, FAILED, REFUNDED, CANCELLED
 
-    @Column(name = "provider", length = 50, nullable = false)
     private String provider = "RAZORPAY";
 
-    @Column(name = "provider_order_id", length = 100)
+    @Indexed
     private String providerOrderId;
 
-    @Column(name = "provider_payment_id", length = 100)
+    @Indexed
     private String providerPaymentId;
 
-    @Column(name = "provider_signature", length = 255)
     private String providerSignature;
-
-    @Column(name = "failure_reason", length = 500)
     private String failureReason;
 
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
+    private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime updatedAt = LocalDateTime.now();
 
     public Payment() {}
 
@@ -68,7 +67,13 @@ public class Payment {
             String providerOrderId) {
         this.id = id;
         this.booking = booking;
+        if (booking != null) {
+            this.bookingId = booking.getId();
+        }
         this.customer = customer;
+        if (customer != null) {
+            this.customerId = customer.getId();
+        }
         this.amount = amount;
         this.currency = currency;
         this.paymentMethod = paymentMethod;
@@ -79,25 +84,30 @@ public class Payment {
         this.updatedAt = LocalDateTime.now();
     }
 
-    @PrePersist
-    public void prePersist() {
-        if (createdAt == null) createdAt = LocalDateTime.now();
-        if (updatedAt == null) updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    public void preUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
-
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
 
     public Booking getBooking() { return booking; }
-    public void setBooking(Booking booking) { this.booking = booking; }
+    public void setBooking(Booking booking) {
+        this.booking = booking;
+        if (booking != null) {
+            this.bookingId = booking.getId();
+        }
+    }
+
+    public String getBookingId() { return bookingId; }
+    public void setBookingId(String bookingId) { this.bookingId = bookingId; }
 
     public User getCustomer() { return customer; }
-    public void setCustomer(User customer) { this.customer = customer; }
+    public void setCustomer(User customer) {
+        this.customer = customer;
+        if (customer != null) {
+            this.customerId = customer.getId();
+        }
+    }
+
+    public String getCustomerId() { return customerId; }
+    public void setCustomerId(String customerId) { this.customerId = customerId; }
 
     public BigDecimal getAmount() { return amount; }
     public void setAmount(BigDecimal amount) { this.amount = amount; }

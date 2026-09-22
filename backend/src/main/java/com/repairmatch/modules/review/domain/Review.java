@@ -3,67 +3,102 @@ package com.repairmatch.modules.review.domain;
 import com.repairmatch.modules.booking.domain.Booking;
 import com.repairmatch.modules.technician.domain.TechnicianProfile;
 import com.repairmatch.modules.user.domain.User;
-import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.index.CompoundIndexes;
+import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.DBRef;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "reviews")
+@Document(collection = "reviews")
+@CompoundIndexes({
+    @CompoundIndex(name = "review_tech_created_idx", def = "{'technicianId': 1, 'createdAt': -1}")
+})
 public class Review {
 
     @Id
-    @Column(name = "id", length = 36, nullable = false)
     private String id;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "booking_id", nullable = false, unique = true)
+    @DBRef
     private Booking booking;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "customer_id", nullable = false)
+    @Indexed(unique = true)
+    private String bookingId;
+
+    @DBRef
     private User customer;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "technician_id", nullable = false)
+    @Indexed
+    private String customerId;
+
+    @DBRef
     private TechnicianProfile technician;
 
-    @Column(name = "rating", nullable = false)
+    @Indexed
+    private String technicianId;
+
     private int rating; // 1 to 5
-
-    @Column(name = "comment", length = 1000)
     private String comment;
-
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
+    private LocalDateTime createdAt = LocalDateTime.now();
 
     public Review() {}
 
     public Review(String id, Booking booking, User customer, TechnicianProfile technician, int rating, String comment) {
         this.id = id;
         this.booking = booking;
+        if (booking != null) {
+            this.bookingId = booking.getId();
+        }
         this.customer = customer;
+        if (customer != null) {
+            this.customerId = customer.getId();
+        }
         this.technician = technician;
+        if (technician != null) {
+            this.technicianId = technician.getId();
+        }
         this.rating = rating;
         this.comment = comment;
         this.createdAt = LocalDateTime.now();
-    }
-
-    @PrePersist
-    public void prePersist() {
-        if (createdAt == null) createdAt = LocalDateTime.now();
     }
 
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
 
     public Booking getBooking() { return booking; }
-    public void setBooking(Booking booking) { this.booking = booking; }
+    public void setBooking(Booking booking) {
+        this.booking = booking;
+        if (booking != null) {
+            this.bookingId = booking.getId();
+        }
+    }
+
+    public String getBookingId() { return bookingId; }
+    public void setBookingId(String bookingId) { this.bookingId = bookingId; }
 
     public User getCustomer() { return customer; }
-    public void setCustomer(User customer) { this.customer = customer; }
+    public void setCustomer(User customer) {
+        this.customer = customer;
+        if (customer != null) {
+            this.customerId = customer.getId();
+        }
+    }
+
+    public String getCustomerId() { return customerId; }
+    public void setCustomerId(String customerId) { this.customerId = customerId; }
 
     public TechnicianProfile getTechnician() { return technician; }
-    public void setTechnician(TechnicianProfile technician) { this.technician = technician; }
+    public void setTechnician(TechnicianProfile technician) {
+        this.technician = technician;
+        if (technician != null) {
+            this.technicianId = technician.getId();
+        }
+    }
+
+    public String getTechnicianId() { return technicianId; }
+    public void setTechnicianId(String technicianId) { this.technicianId = technicianId; }
 
     public int getRating() { return rating; }
     public void setRating(int rating) { this.rating = rating; }

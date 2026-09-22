@@ -1,30 +1,37 @@
 package com.repairmatch.modules.catalog.domain;
 
-import jakarta.persistence.*;
-import java.time.LocalDateTime;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.Document;
 
-@Entity
-@Table(name = "brands")
+import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
+
+@Document(collection = "brands")
 public class Brand {
 
     @Id
-    @Column(name = "id", length = 36, nullable = false)
     private String id;
 
-    @Column(name = "name", length = 100, nullable = false, unique = true)
+    @Indexed(unique = true)
     private String name;
 
-    @Column(name = "slug", length = 100, nullable = false, unique = true)
+    @Indexed(unique = true)
     private String slug;
 
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
+    @Indexed
+    private Set<String> categoryIds = new HashSet<>();
+
+    private LocalDateTime createdAt = LocalDateTime.now();
 
     public Brand() {}
 
-    @PrePersist
-    public void prePersist() {
-        if (createdAt == null) createdAt = LocalDateTime.now();
+    public Brand(String id, String name, String slug) {
+        this.id = id;
+        this.name = name;
+        this.slug = slug;
+        this.createdAt = LocalDateTime.now();
     }
 
     public String getId() { return id; }
@@ -35,6 +42,9 @@ public class Brand {
 
     public String getSlug() { return slug; }
     public void setSlug(String slug) { this.slug = slug; }
+
+    public Set<String> getCategoryIds() { return categoryIds; }
+    public void setCategoryIds(Set<String> categoryIds) { this.categoryIds = categoryIds; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }

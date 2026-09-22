@@ -1,45 +1,45 @@
 package com.repairmatch.modules.catalog.domain;
 
-import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.DBRef;
+import org.springframework.data.mongodb.core.mapping.Document;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "problem_types")
+@Document(collection = "problem_types")
 public class ProblemType {
 
     @Id
-    @Column(name = "id", length = 36, nullable = false)
     private String id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "category_id", nullable = false)
+    @DBRef
     private Category category;
 
-    @Column(name = "title", length = 200, nullable = false)
+    @Indexed
+    private String categoryId;
+
     private String title;
-
-    @Column(name = "description", length = 500)
     private String description;
-
-    @Column(name = "typical_price_estimate", nullable = false)
     private BigDecimal typicalPriceEstimate;
-
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
+    private LocalDateTime createdAt = LocalDateTime.now();
 
     public ProblemType() {}
-
-    @PrePersist
-    public void prePersist() {
-        if (createdAt == null) createdAt = LocalDateTime.now();
-    }
 
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
 
     public Category getCategory() { return category; }
-    public void setCategory(Category category) { this.category = category; }
+    public void setCategory(Category category) {
+        this.category = category;
+        if (category != null) {
+            this.categoryId = category.getId();
+        }
+    }
+
+    public String getCategoryId() { return categoryId; }
+    public void setCategoryId(String categoryId) { this.categoryId = categoryId; }
 
     public String getTitle() { return title; }
     public void setTitle(String title) { this.title = title; }

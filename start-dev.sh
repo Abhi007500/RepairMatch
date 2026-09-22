@@ -18,40 +18,33 @@ if [ -f "$PROJECT_ROOT/.env" ]; then
     set +a
 fi
 
-# Ensure common tools are in PATH (Node/NVM, Homebrew PostgreSQL, Maven)
+# Ensure common tools are in PATH (Node/NVM, MongoDB, Maven)
 if [ -d "$HOME/.nvm/versions/node" ]; then
     LATEST_NODE=$(ls "$HOME/.nvm/versions/node" 2>/dev/null | tail -n 1)
     if [ -n "$LATEST_NODE" ]; then
         export PATH="$HOME/.nvm/versions/node/$LATEST_NODE/bin:$PATH"
     fi
 fi
-if [ -d "/opt/homebrew/opt/postgresql@16/bin" ]; then
-    export PATH="/opt/homebrew/opt/postgresql@16/bin:/opt/homebrew/bin:$PATH"
+if [ -d "/opt/homebrew/opt/mongodb-community/bin" ]; then
+    export PATH="/opt/homebrew/opt/mongodb-community/bin:/opt/homebrew/bin:$PATH"
 fi
 
 echo "=================================================="
 echo "🛠️  Starting RepairMatch Local Development Stack"
 echo "=================================================="
 
-# 1. Check and Start PostgreSQL
-echo -n "🐘 Checking PostgreSQL status... "
-if command -v pg_isready >/dev/null 2>&1 && pg_isready -q; then
-    echo "Running."
+# 1. Check MongoDB Configuration / Connectivity
+if [[ "$MONGODB_URI" == *"mongodb+srv://"* ]]; then
+    echo "🍃 MongoDB Atlas remote connection detected via MONGODB_URI."
+elif [ -n "$MONGODB_URI" ]; then
+    echo "🍃 MongoDB configured via MONGODB_URI ($MONGODB_URI)."
 else
-    echo "Not running. Starting PostgreSQL 16..."
-    if [ -f "/opt/homebrew/opt/postgresql@16/bin/pg_ctl" ]; then
-        /opt/homebrew/opt/postgresql@16/bin/pg_ctl -D /opt/homebrew/var/postgresql@16 -l /opt/homebrew/var/log/postgresql@16.log start || true
-        sleep 2
+    echo -n "🍃 Checking local MongoDB status (port 27017)... "
+    if nc -z localhost 27017 >/dev/null 2>&1; then
+        echo "Running."
     else
-        echo "⚠️  pg_ctl not found at default location. Please ensure PostgreSQL is running."
-    fi
-fi
-
-# Ensure 'repairmatch' database exists
-if command -v psql >/dev/null 2>&1; then
-    if ! psql -lqt | cut -d \| -f 1 | grep -qw repairmatch; then
-        echo "Creating 'repairmatch' database..."
-        createdb repairmatch
+        echo "Not detected on port 27017."
+        echo "ℹ️  Tip: If using local MongoDB, start it with 'brew services start mongodb-community' or set MONGODB_URI to your MongoDB Atlas connection string in .env"
     fi
 fi
 
@@ -120,7 +113,7 @@ echo "=================================================="
 echo "🌐 Frontend URL: http://localhost:5173"
 echo "🔌 Backend API:  http://localhost:8080"
 echo "🩺 Health Check: http://localhost:8080/api/health"
-echo "🐘 Database:     PostgreSQL (repairmatch on port 5432)"
+echo "🍃 Database:     MongoDB Atlas / Local MongoDB (database: ${MONGODB_DATABASE:-repairmatch})"
 echo "--------------------------------------------------"
 echo "👥 Demo Logins:"
 echo "   • Customer:   rahul@gmail.com / password123"

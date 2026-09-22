@@ -1,42 +1,37 @@
 package com.repairmatch.modules.auth.domain;
 
-import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.index.CompoundIndexes;
+import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.Document;
+
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "otp_verifications")
+@Document(collection = "otp_verifications")
+@CompoundIndexes({
+    @CompoundIndex(name = "otp_phone_verified_created_idx", def = "{'phoneNumber': 1, 'verified': 1, 'createdAt': -1}")
+})
 public class OtpVerification {
 
     @Id
-    @Column(name = "id", length = 36, nullable = false)
     private String id;
 
-    @Column(name = "phone_number", length = 20, nullable = false)
+    @Indexed
     private String phoneNumber;
 
-    @Column(name = "otp_hash", length = 255, nullable = false)
     private String otpHash;
-
-    @Column(name = "attempts", nullable = false)
     private int attempts = 0;
-
-    @Column(name = "max_attempts", nullable = false)
     private int maxAttempts = 5;
 
-    @Column(name = "expires_at", nullable = false)
+    @Indexed
     private LocalDateTime expiresAt;
 
-    @Column(name = "resend_available_at", nullable = false)
     private LocalDateTime resendAvailableAt;
-
-    @Column(name = "is_verified", nullable = false)
     private boolean verified = false;
 
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
+    private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime updatedAt = LocalDateTime.now();
 
     public OtpVerification() {}
 
@@ -57,17 +52,6 @@ public class OtpVerification {
         this.verified = false;
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
-    }
-
-    @PrePersist
-    public void prePersist() {
-        if (createdAt == null) createdAt = LocalDateTime.now();
-        if (updatedAt == null) updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    public void preUpdate() {
-        updatedAt = LocalDateTime.now();
     }
 
     public String getId() { return id; }

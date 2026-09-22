@@ -1,23 +1,28 @@
 package com.repairmatch.modules.review.repository;
 
 import com.repairmatch.modules.review.domain.Review;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface ReviewRepository extends JpaRepository<Review, String> {
+public interface ReviewRepository extends MongoRepository<Review, String> {
     Optional<Review> findByBookingId(String bookingId);
     List<Review> findByTechnicianIdOrderByCreatedAtDesc(String technicianId);
 
-    @Query("SELECT r FROM Review r JOIN FETCH r.customer WHERE r.technician.id = :technicianId ORDER BY r.createdAt DESC")
-    List<Review> findByTechnicianIdWithCustomer(String technicianId);
-
-    @Query("SELECT AVG(r.rating) FROM Review r WHERE r.technician.id = :technicianId")
-    Double calculateAverageRatingByTechnicianId(String technicianId);
+    default List<Review> findByTechnicianIdWithCustomer(String technicianId) {
+        return findByTechnicianIdOrderByCreatedAtDesc(technicianId);
+    }
 
     int countByTechnicianId(String technicianId);
+
+    default Double calculateAverageRatingByTechnicianId(String technicianId) {
+        List<Review> list = findByTechnicianIdOrderByCreatedAtDesc(technicianId);
+        if (list.isEmpty()) {
+            return null;
+        }
+        return list.stream().mapToInt(Review::getRating).average().orElse(0.0);
+    }
 }

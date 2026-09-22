@@ -12,7 +12,6 @@ import com.repairmatch.modules.user.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -37,7 +36,6 @@ class DomainModelAndSeedDataTest {
     private BookingRepository bookingRepository;
 
     @Test
-    @Transactional
     void verifySeedCategoriesAreLoaded() {
         List<Category> categories = categoryRepository.findAllByOrderByDisplayOrderAsc();
         assertEquals(16, categories.size(), "Should have all 16 seed categories");
@@ -66,7 +64,6 @@ class DomainModelAndSeedDataTest {
     }
 
     @Test
-    @Transactional
     void verifyTechnicianQueryForCategory() {
         // Tech 1 is registered for cat-01 (Smartphones)
         List<TechnicianProfile> smartphoneTechs = technicianProfileRepository.findVerifiedAndAvailableByCategoryId("cat-01");

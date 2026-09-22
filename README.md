@@ -3,8 +3,8 @@
 
 [![Java 21+](https://img.shields.io/badge/Java-21%2B-ED8B00?logo=openjdk&logoColor=white)](https://openjdk.org/)
 [![Spring Boot 3.3.4](https://img.shields.io/badge/Spring%20Boot-3.3.4-6DB33F?logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
-[![PostgreSQL 16](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
-[![Flyway Migration](https://img.shields.io/badge/Flyway-10.x-CC0200?logo=flyway&logoColor=white)](https://flywaydb.org/)
+[![MongoDB Atlas](https://img.shields.io/badge/MongoDB-Atlas%20%2F%206%2B-47A248?logo=mongodb&logoColor=white)](https://www.mongodb.com/atlas)
+[![Spring Data MongoDB](https://img.shields.io/badge/Spring%20Data-MongoDB-47A248?logo=spring&logoColor=white)](https://spring.io/projects/spring-data-mongodb)
 [![React 18](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black)](https://react.dev/)
 [![Vite 5](https://img.shields.io/badge/Vite-5-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
 [![Tailwind CSS 3](https://img.shields.io/badge/Tailwind%20CSS-3-38B2AC?logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
@@ -57,7 +57,7 @@
 
 The application matches users based on hardware brand specialization, problem diagnosis, Haversine geographic distance, schedule non-conflict, verified customer rating history, and pricing competitiveness. 
 
-The project is built as a clean modular monolith using **Java 21**, **Spring Boot 3.3**, and **PostgreSQL** on the backend, paired with a responsive **React 18** Single Page Application styled with **Tailwind CSS**.
+The project is built as a clean modular monolith using **Java 21**, **Spring Boot 3.3**, and **MongoDB Atlas** on the backend, paired with a responsive **React 18** Single Page Application styled with **Tailwind CSS**.
 
 ---
 
@@ -102,8 +102,8 @@ RepairMatch addresses each challenge through strict domain boundaries, automated
 | **Runtime & Language** | Java 21 LTS / Java 23 | Modern language features, strong type safety, and high-performance concurrency |
 | **Framework** | Spring Boot 3.3.4 | Dependency injection, enterprise security, and production-ready monitoring |
 | **Security & JWT** | Spring Security 6, JJWT 0.12.6 | Stateless bearer token authentication and role-based endpoint protection |
-| **Database Access** | Spring Data JPA, Hibernate 6 | Type-safe repository abstraction, transactions, and entity lifecycle hooks |
-| **Database Migrations** | Flyway 10.x | Reproducible, version-controlled SQL schema evolution across environments |
+| **Database Access** | Spring Data MongoDB | High-performance document mapping, indexed query execution, and atomic updates |
+| **Data Initialization** | Spring Boot `CommandLineRunner` | Automatic, idempotent baseline dataset seeding across 16 categories and 8 demo users |
 | **Testing Suite** | JUnit 5, Mockito, Spring Boot Test | Comprehensive unit, mock web, and integration test coverage |
 
 ### Frontend Architecture
@@ -117,8 +117,8 @@ RepairMatch addresses each challenge through strict domain boundaries, automated
 ### Database & Storage
 | Component | Technology | Rationale |
 | :--- | :--- | :--- |
-| **Primary Database** | PostgreSQL 16 | Relational consistency, transactional ACID compliance, and geospatial coordinates |
-| **Test Database** | H2 Database (in-memory) | High-speed, isolated integration testing with PostgreSQL compatibility mode |
+| **Primary Database** | MongoDB Atlas (or MongoDB 6+) | Scalable document model, native JSON alignment, high-speed geospatial and compound indexing |
+| **Test Database** | In-Memory MongoDB Server (`mongo-java-server`) | Zero-dependency, hermetic integration testing running directly in the JVM without external Daemons |
 
 ---
 
@@ -146,18 +146,19 @@ RepairMatch addresses each challenge through strict domain boundaries, automated
 │                               │ • AdminController       │  │ • CustomerService       │ │
 │                               └─────────────────────────┘  └─────────────────────────┘ │
 │                                            │                                           │
-│                                            ▼                                           │
-│                               ┌─────────────────────────┐                              │
-│                               │ Spring Data JPA Repos   │                              │
-│                               └────────────┬────────────┘                              │
+│                                            ▼
+│                               ┌─────────────────────────┐
+│                               │ Spring Data Mongo Repos │
+│                               └────────────┬────────────┘
 └────────────────────────────────────────────┼───────────────────────────────────────────┘
-                                             │ JDBC Connection
+                                             │ Wire Protocol / Connection String
                                              ▼
                                 ┌─────────────────────────┐
-                                │ PostgreSQL Database     │
-                                │ (Port 5432)             │
-                                │ • 16 Relational Tables  │
-                                │ • Flyway Migrations     │
+                                │ MongoDB Atlas Cluster   │
+                                │ (or Local Port 27017)   │
+                                │ • Document Collections  │
+                                │ • Compound & 2D Indexes │
+                                │ • MongoDataInitializer  │
                                 └─────────────────────────┘
 ```
 
@@ -179,7 +180,7 @@ Repairmatch/
 │       │   ├── java/com/repairmatch/
 │       │   │   ├── RepairMatchApplication.java
 │       │   │   ├── common/            # Cross-cutting concerns
-│       │   │   │   ├── config/        # Security, CORS, PasswordEncoder configs
+│       │   │   │   ├── config/        # Security, CORS, MongoDataInitializer configs
 │       │   │   │   ├── exception/     # GlobalExceptionHandler, Custom Exceptions
 │       │   │   │   ├── security/      # JwtTokenProvider, UserPrincipal, JwtAuthFilter
 │       │   │   │   └── utils/         # GeoUtils (Haversine distance calculations)
@@ -194,8 +195,7 @@ Repairmatch/
 │       │   │       ├── technician/    # Profiles, skills, availability toggles
 │       │   │       └── user/          # User entities, addresses, profiles
 │       │   └── resources/
-│       │       ├── application.yml    # Externalized configuration properties
-│       │       └── db/migration/      # Flyway SQL scripts (V1 through V4)
+│       │       └── application.yml    # Externalized configuration properties (Atlas URI)
 │       └── test/                      # Automated test suites (42 test cases)
 │
 └── frontend/                          # React 18 + Vite Frontend
@@ -220,41 +220,57 @@ Repairmatch/
 
 ---
 
-## 🗄️ Database Architecture & Migrations
+## 🗄️ Database Architecture & Collections
 
-The database is version-controlled with **Flyway** and adheres to strict relational integrity with foreign keys, cascading constraints, and performance indexes.
+RepairMatch is backed by **MongoDB Atlas** using **Spring Data MongoDB**. Persistence models use high-performance JSON-native document collections with explicit indexes, `@DBRef` relational linkages, and foreign keys stored directly on child documents for O(1) indexed lookups.
 
 ```
 ┌─────────────────┐       ┌────────────────────────┐       ┌─────────────────┐
-│      users      │───1:N─│       addresses        │       │   categories    │
-│  (id, role,     │       │ (lat, lng, street)     │       │ (id, slug, icon)│
-│   password_hash)│       └────────────────────────┘       └────────┬────────┘
-└────────┬────────┘                                                 │ 1:N
-         │ 1:1                                             ┌────────┴────────┐
-┌────────┴────────┐       ┌────────────────────────┐       │  problem_types  │
-│technician_profiles│──1:N─│  technician_skills     │       │ (symptom, fee)  │
-│(radius, rating, │       │(categories, brands,    │       └─────────────────┘
-│ fee, kyc_status)│       │ problem_types)         │
-└────────┬────────┘       └────────────────────────┘
+│      users      │──1:N──│       addresses        │       │   categories    │
+│  (id, role,     │       │ (lat, lng, street,     │       │ (id, slug, icon,│
+│   password_hash)│       │  userId)               │       │  brands [@DBRef])│
+└────────┬────────┘       └────────────────────────┘       └────────┬────────┘
+         │ 1:1                                                      │ 1:N
+┌────────┴────────┐       ┌────────────────────────┐       ┌────────┴────────┐
+│technician_profiles│─1:N─│    catalog models      │       │  problem_types  │
+│(radius, rating, │       │(brands, models,        │       │ (title, fee,    │
+│ fee, kyc_status,│       │ categoryIds)           │       │  categoryId)    │
+│ categories,     │       └────────────────────────┘       └─────────────────┘
+│ brands, problems)
+└────────┬────────┘
          │ 1:N
 ┌────────┴────────┐       ┌────────────────────────┐       ┌─────────────────┐
-│    bookings     │──1:N─│    booking_timeline    │       │     reviews     │
-│(status, amount, │       │ (state, timestamp)     │       │(rating 1-5,     │
-│ payment_status) │       └────────────────────────┘       │ customer review)│
+│    bookings     │──1:N──│    booking_timeline    │       │     reviews     │
+│(status, amount, │       │ (state, timestamp,     │       │(rating 1-5,     │
+│ payment_status, │       │  bookingId)            │       │ customer, tech, │
+│ @Version lock)  │       └────────────────────────┘       │ bookingId)      │
 └────────┬────────┘                                        └─────────────────┘
          │ 1:N
 ┌────────┴────────┐       ┌────────────────────────┐
 │    payments     │       │   otp_verifications    │
-│ (provider,      │       │ (phone, otp_hash,      │
-│  order_id, sig) │       │  attempts, expires_at) │
+│ (provider,      │       │ (phoneNumber, otpHash, │
+│  orderId, sig,  │       │  attempts, verified,   │
+│  bookingId)     │       │  expiresAt)            │
 └─────────────────┘       └────────────────────────┘
 ```
 
-### Migration History:
-1. **`V1__init.sql`:** Core schema creation (`users`, `addresses`, `technician_profiles`, `categories`, `brands`, `models`, `problem_types`, `technician_categories`, `technician_brands`, `technician_problems`, `bookings`, `booking_timeline`, `reviews`).
-2. **`V2__domain_schema.sql`:** Performance indexes on geospatial coordinates (`latitude`, `longitude`), booking statuses, and technician ratings.
-3. **`V3__seed_data.sql`:** Idempotent seed data provisioning 16 repair categories, 16 major brands, models, common problem types, and 5 pre-configured demo user accounts across all platform roles.
-4. **`V4__payments_and_otp.sql`:** Schema additions for `otp_verifications` (rate limiting, BCrypt hash, cooldown timestamps) and `payments` (gateway orders, payment signatures, payment states).
+### MongoDB Indexing Strategy:
+1. **Unique Indexes:**
+   - `users.email` — Prevents duplicate registrations.
+   - `categories.slug` & `brands.slug` — Fast slug-based route resolution.
+   - `bookings.bookingReference` — Guarantees unique human-readable booking IDs (`RM-2026-XXXX`).
+   - `reviews.bookingId` — Guarantees exactly one review per booking.
+   - `payments.providerOrderId` — Prevents duplicate gateway order mapping.
+2. **Compound & Query Optimization Indexes:**
+   - `bookings`: `[technicianId ASC, scheduledDate ASC, timeSlot ASC, status ASC]` — Millisecond-level conflict detection for the matching engine.
+   - `bookings`: `[customerId ASC, createdAt DESC]` — Instant customer history feeds.
+   - `bookings`: `[technicianId ASC, createdAt DESC]` — Real-time technician dispatch queues.
+   - `otp_verifications`: `[phoneNumber ASC, verified ASC, createdAt DESC]` — High-speed cooldown and attempt verification.
+   - `technician_profiles`: `[verificationStatus ASC, isAvailable ASC]` — Ultra-fast first-stage matching filtering.
+3. **Concurrency Control:**
+   - `Booking` documents employ `@Version Long version` providing optimistic locking against simultaneous technician assignment or status change race conditions.
+4. **Idempotent Baseline Data Seeding:**
+   - Spring Boot `MongoDataInitializer` automatically provisions baseline categories, brands, problem types, models, addresses, 8 demo users with BCrypt credentials, technician profiles, bookings, timelines, and sample reviews upon initial boot if collections are empty.
 
 ---
 
@@ -376,7 +392,7 @@ Bookings follow a formal, validated state machine enforced by `BookingStateMachi
 RepairMatch provides secure, production-ready phone-number authentication for customers and technicians alongside standard email sign-in.
 
 ```
-[User Browser]                      [Backend AuthService]               [PostgreSQL Database]
+[User Browser]                      [Backend AuthService]               [MongoDB Database]
       │                                       │                                   │
       │── 1. POST /api/auth/otp/send ────────>│                                   │
       │      (phone: "9876543210")            │── 2. Validate Indian phone format │
@@ -445,23 +461,34 @@ Payment for technician inspection and repair services uses Razorpay with cryptog
 ### System Prerequisites
 - **Java Development Kit:** OpenJDK 21 or 23
 - **Node.js:** Node.js 18+ (tested on Node 23) and npm
-- **Database:** PostgreSQL 16+
+- **Database:** MongoDB Atlas (Free Tier M0) or local MongoDB Community 6+
 - **Build Tool:** Apache Maven 3.9+
 
 ---
 
-### Step 1: Database Initialization
-Ensure PostgreSQL is running and create the `repairmatch` database:
+### Step 1: Database Setup (MongoDB Atlas or Local MongoDB)
+
+#### Option A: MongoDB Atlas (Cloud — Recommended)
+1. Sign up for a free account at [MongoDB Atlas](https://www.mongodb.com/atlas).
+2. Create an **M0 Free Cluster** in your preferred region.
+3. Under **Security ➔ Database Access**, create a database user (e.g., `repairmatch_admin` with password).
+4. Under **Security ➔ Network Access**, click **Add IP Address** and select **Allow Access from Anywhere** (`0.0.0.0/0`) or whitelist your current IP.
+5. Under **Deployments ➔ Database**, click **Connect ➔ Drivers (Java)**, and copy your connection string:
+   ```bash
+   mongodb+srv://<username>:<password>@<cluster-name>.mongodb.net/repairmatch?retryWrites=true&w=majority
+   ```
+
+#### Option B: Local MongoDB (Homebrew / System)
 ```bash
 # macOS (Homebrew)
-brew services start postgresql@16
-createdb repairmatch
+brew tap mongodb/brew
+brew install mongodb-community
+brew services start mongodb-community
 
 # Linux (Ubuntu / Debian)
-sudo systemctl start postgresql
-sudo -u postgres createdb repairmatch
+sudo systemctl start mongod
 ```
-*Flyway automatically executes migrations `V1` through `V4` on the initial backend start.*
+*On initial startup, `MongoDataInitializer` automatically detects empty collections and provisions all 16 categories, 16 brands, 10 models, 10 problem types, and 8 demo user accounts.*
 
 ---
 
@@ -470,14 +497,18 @@ Copy the configuration template to `.env`:
 ```bash
 cp .env.example .env
 ```
-*(Optionally review and customize database credentials or ports in `.env`).*
+Open `.env` and set `MONGODB_URI` to your MongoDB Atlas connection string (or keep the default `mongodb://localhost:27017/repairmatch` for local MongoDB):
+```bash
+MONGODB_URI=mongodb+srv://<username>:<password>@<cluster-name>.mongodb.net/repairmatch?retryWrites=true&w=majority
+MONGODB_DATABASE=repairmatch
+```
 
 ---
 
 ### Step 3: Run the Development Stack
 
 #### Option A: One-Command Startup (Recommended)
-A zero-dependency bash script starts PostgreSQL, compiles and launches the Spring Boot backend, starts Vite, and verifies health:
+A zero-dependency bash script verifies MongoDB, compiles and launches the Spring Boot backend, starts Vite, and verifies health:
 ```bash
 chmod +x start-dev.sh
 ./start-dev.sh
@@ -505,7 +536,7 @@ npm run dev
 
 ## 👥 Pre-Seeded Test Accounts
 
-The seed migration (`V3__seed_data.sql`) pre-configures test accounts for all roles. The frontend login page includes convenient **1-Click Quick Demo Login** buttons:
+The baseline seeder (`MongoDataInitializer.java`) pre-configures test accounts for all roles. The frontend login page includes convenient **1-Click Quick Demo Login** buttons:
 
 | Role | Email | Phone Number | Password | Profile Highlights |
 | :--- | :--- | :--- | :--- | :--- |
@@ -521,9 +552,8 @@ The seed migration (`V3__seed_data.sql`) pre-configures test accounts for all ro
 
 | Variable | Default Value | Description |
 | :--- | :--- | :--- |
-| `SPRING_DATASOURCE_URL` | `jdbc:postgresql://localhost:5432/repairmatch` | JDBC connection string |
-| `SPRING_DATASOURCE_USERNAME` | `${USER:postgres}` | Database user |
-| `SPRING_DATASOURCE_PASSWORD` | *(empty)* | Database password |
+| `MONGODB_URI` | `mongodb://localhost:27017/repairmatch` | MongoDB connection URI (Atlas SRV or local) |
+| `MONGODB_DATABASE` | `repairmatch` | Target MongoDB database name |
 | `PORT` | `8080` | Backend HTTP listening port |
 | `JWT_SECRET` | `404E6352...` *(dev default)* | 256-bit secret key for HMAC-SHA256 JWT signing |
 | `JWT_EXPIRATION_MS` | `86400000` | JWT token lifetime (24 hours) |
@@ -595,7 +625,7 @@ The seed migration (`V3__seed_data.sql`) pre-configures test accounts for all ro
 ## 🧪 Testing & Verification
 
 ### Automated Backend Tests
-Run the entire JUnit 5 test suite (utilizes an isolated in-memory H2 database with PostgreSQL compatibility mode):
+Run the entire JUnit 5 test suite (utilizes an in-memory MongoDB mock server for hermetic, zero-dependency testing without external database or Docker processes):
 ```bash
 cd backend
 mvn test
@@ -620,7 +650,7 @@ mvn test
 - `ReviewWorkflowTest` (2 tests) — Rating recalculation, duplicate review guards, and completed booking requirements.
 - `AuthControllerTest` (5 tests) — Customer and technician registration, bad credentials handling, JWT issuance.
 - `CatalogControllerTest` (4 tests) — Category, brand, model, and symptom hierarchy.
-- `DomainModelAndSeedDataTest` (4 tests) — Flyway migration execution, seeds, BCrypt encryption.
+- `DomainModelAndSeedDataTest` (4 tests) — Baseline collection initialization, categories/brands/models, technician queries, BCrypt encryption.
 - `CustomerAndTechnicianControllerTest` (3 tests) — Address books, profile updates, on-duty toggles.
 - `EndToEndRepairJourneyTest` (1 test) — Comprehensive multi-step flow from diagnosis to payment and review.
 - `HealthControllerTest` (1 test) — Actuator health check verification.
@@ -637,37 +667,57 @@ npm run build
 
 ## 🚢 Production Deployment Guide
 
-### 1. Docker Containerization (Blueprint)
+### 1. Backend Deployment on Render (Docker Runtime)
 
-**Backend `Dockerfile`:**
-```dockerfile
-FROM eclipse-temurin:21-jre-alpine
-VOLUME /tmp
-COPY backend/target/*.jar app.jar
-ENTRYPOINT ["java","-jar","/app.jar"]
-```
+RepairMatch includes a production-ready, multi-stage [`backend/Dockerfile`](file:///Users/abhishekmishra/Documents/Repairmatch/backend/Dockerfile) engineered for **Render Web Services**:
 
-**Frontend `Dockerfile`:**
-```dockerfile
-FROM node:20-alpine AS build
-WORKDIR /app
-COPY frontend/package*.json ./
-RUN npm install
-COPY frontend/ ./
-RUN npm run build
+1. Log in to [Render Dashboard](https://dashboard.render.com/) and click **New + ➔ Web Service**.
+2. Connect your GitHub repository: `https://github.com/Abhi007500/RepairMatch`.
+3. Configure the service settings:
+   - **Name:** `repairmatch-backend`
+   - **Region:** Choose the region closest to your MongoDB Atlas cluster (e.g., Singapore, Frankfurt, Oregon).
+   - **Language / Runtime:** **Docker**
+   - **Root Directory:** `backend`
+   - **Dockerfile Path:** `Dockerfile` (relative to `backend` directory)
+   - **Instance Type:** Free or Starter
+4. Under **Environment Variables**, add the required secrets:
+   | Key | Example / Description |
+   | :--- | :--- |
+   | `MONGODB_URI` | `mongodb+srv://<user>:<password>@cluster0.xxxx.mongodb.net/repairmatch?retryWrites=true&w=majority` |
+   | `MONGODB_DATABASE` | `repairmatch` |
+   | `JWT_SECRET` | Generate with `openssl rand -hex 32` |
+   | `CORS_ALLOWED_ORIGINS` | `https://repairmatch.vercel.app,http://localhost:5173` |
+   | `RAZORPAY_KEY_ID` | Your Razorpay Key ID |
+   | `RAZORPAY_KEY_SECRET` | Your Razorpay Key Secret |
+   | `SMS_PROVIDER` | `dev` (or `twilio` with `SMS_API_KEY`, `SMS_API_SECRET`, `SMS_SENDER_ID`) |
+5. Under **Advanced ➔ Health Check Path**, set `/api/health`.
+6. Click **Create Web Service**. Render will automatically build the container and deploy the service.
 
-FROM nginx:alpine
-COPY --from=build /app/dist /usr/share/nginx/html
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
-```
+---
 
-### 2. Cloud Deployment Topology
-- **Database:** Managed PostgreSQL (e.g., AWS RDS, Supabase, Neon).
-- **Backend API:** Containerized deployment on Render, Railway, AWS ECS, or Fly.io with environment variable injection.
-- **Frontend SPA:** Static host on Vercel, Netlify, or Cloudflare Pages with API proxying.
-- **SMS Gateway:** Configure Twilio Account SID, Auth Token, and registered Sender ID in production environment variables.
-- **Payment Gateway:** Configure Razorpay Live Key ID and Live Key Secret with HTTPS webhooks.
+### 2. Frontend Deployment on Vercel
+
+1. Import the repository on [Vercel](https://vercel.com/new).
+2. Configure project settings:
+   - **Framework Preset:** `Vite`
+   - **Root Directory:** `frontend`
+   - **Build Command:** `npm run build`
+   - **Output Directory:** `dist`
+3. Under **Environment Variables**, configure:
+   ```bash
+   VITE_API_BASE_URL=https://repairmatch-backend.onrender.com/api
+   ```
+4. Click **Deploy**.
+
+---
+
+### 3. Cloud Deployment Architecture
+
+- **Database:** Managed MongoDB Atlas (Free M0 or Serverless Cluster with TLS, compound indexes, and automated daily backups).
+- **Backend API:** Containerized Spring Boot 3 running on Render Docker runtime (dynamic port resolution via `${PORT:8080}`).
+- **Frontend SPA:** Globally distributed edge CDN hosting on Vercel with automatic HTTPS.
+- **SMS Gateway:** Configurable provider interface (`dev` for simulation, or live SMS dispatch via Twilio / Fast2SMS).
+- **Payment Gateway:** Razorpay India gateway with cryptographic HMAC-SHA256 signature verification.
 
 ---
 

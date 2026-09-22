@@ -1,53 +1,39 @@
 package com.repairmatch.modules.catalog.domain;
 
-import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.DBRef;
+import org.springframework.data.mongodb.core.mapping.Document;
+
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
-@Entity
-@Table(name = "categories")
+@Document(collection = "categories")
 public class Category {
 
     @Id
-    @Column(name = "id", length = 36, nullable = false)
     private String id;
 
-    @Column(name = "name", length = 100, nullable = false, unique = true)
+    @Indexed(unique = true)
     private String name;
 
-    @Column(name = "slug", length = 100, nullable = false, unique = true)
+    @Indexed(unique = true)
     private String slug;
 
-    @Column(name = "description", length = 500)
     private String description;
-
-    @Column(name = "icon_name", length = 50)
     private String iconName;
-
-    @Column(name = "requires_brand_and_model", nullable = false)
     private boolean requiresBrandAndModel;
 
-    @Column(name = "display_order", nullable = false)
+    @Indexed
     private int displayOrder;
 
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
+    private LocalDateTime createdAt = LocalDateTime.now();
 
-    @ManyToMany
-    @JoinTable(
-        name = "category_brands",
-        joinColumns = @JoinColumn(name = "category_id"),
-        inverseJoinColumns = @JoinColumn(name = "brand_id")
-    )
+    @DBRef
     private Set<Brand> brands = new HashSet<>();
 
     public Category() {}
-
-    @PrePersist
-    public void prePersist() {
-        if (createdAt == null) createdAt = LocalDateTime.now();
-    }
 
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }

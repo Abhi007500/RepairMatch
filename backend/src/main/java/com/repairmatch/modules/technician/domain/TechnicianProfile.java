@@ -4,109 +4,86 @@ import com.repairmatch.modules.catalog.domain.Brand;
 import com.repairmatch.modules.catalog.domain.Category;
 import com.repairmatch.modules.catalog.domain.ProblemType;
 import com.repairmatch.modules.user.domain.User;
-import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.index.CompoundIndexes;
+import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.DBRef;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
-@Entity
-@Table(name = "technician_profiles")
+@Document(collection = "technician_profiles")
+@CompoundIndexes({
+    @CompoundIndex(name = "tech_status_avail_idx", def = "{'verificationStatus': 1, 'available': 1}"),
+    @CompoundIndex(name = "tech_category_status_idx", def = "{'categoryIds': 1, 'verificationStatus': 1, 'available': 1}")
+})
 public class TechnicianProfile {
 
     @Id
-    @Column(name = "id", length = 36, nullable = false)
     private String id;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false, unique = true)
+    @DBRef
     private User user;
 
-    @Column(name = "bio", length = 1000)
-    private String bio;
+    @Indexed(unique = true)
+    private String userId;
 
-    @Column(name = "experience_years", nullable = false)
+    private String bio;
     private int experienceYears;
 
-    @Column(name = "verification_status", length = 20, nullable = false)
-    private String verificationStatus; // PENDING, VERIFIED, REJECTED
+    @Indexed
+    private String verificationStatus = "PENDING"; // PENDING, VERIFIED, REJECTED
 
-    @Column(name = "kyc_document_url", length = 255)
     private String kycDocumentUrl;
-
-    @Column(name = "base_inspection_fee", nullable = false)
     private BigDecimal baseInspectionFee;
-
-    @Column(name = "service_radius_km", nullable = false)
     private double serviceRadiusKm;
-
-    @Column(name = "latitude", nullable = false)
     private double latitude;
-
-    @Column(name = "longitude", nullable = false)
     private double longitude;
 
-    @Column(name = "average_rating", nullable = false)
+    @Indexed
     private double averageRating = 0.0;
 
-    @Column(name = "total_reviews", nullable = false)
     private int totalReviews = 0;
-
-    @Column(name = "completed_jobs_count", nullable = false)
     private int completedJobsCount = 0;
 
-    @Column(name = "is_available", nullable = false)
+    @Indexed
     private boolean available = true;
 
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
+    private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime updatedAt = LocalDateTime.now();
 
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
-
-    @ManyToMany
-    @JoinTable(
-        name = "technician_categories",
-        joinColumns = @JoinColumn(name = "technician_id"),
-        inverseJoinColumns = @JoinColumn(name = "category_id")
-    )
+    @DBRef
     private Set<Category> categories = new HashSet<>();
 
-    @ManyToMany
-    @JoinTable(
-        name = "technician_brands",
-        joinColumns = @JoinColumn(name = "technician_id"),
-        inverseJoinColumns = @JoinColumn(name = "brand_id")
-    )
+    @Indexed
+    private Set<String> categoryIds = new HashSet<>();
+
+    @DBRef
     private Set<Brand> brands = new HashSet<>();
 
-    @ManyToMany
-    @JoinTable(
-        name = "technician_problems",
-        joinColumns = @JoinColumn(name = "technician_id"),
-        inverseJoinColumns = @JoinColumn(name = "problem_type_id")
-    )
+    @DBRef
     private Set<ProblemType> problemTypes = new HashSet<>();
 
     public TechnicianProfile() {}
-
-    @PrePersist
-    public void prePersist() {
-        if (createdAt == null) createdAt = LocalDateTime.now();
-        if (updatedAt == null) updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    public void preUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
 
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
 
     public User getUser() { return user; }
-    public void setUser(User user) { this.user = user; }
+    public void setUser(User user) {
+        this.user = user;
+        if (user != null) {
+            this.userId = user.getId();
+        }
+    }
+
+    public String getUserId() { return userId; }
+    public void setUserId(String userId) { this.userId = userId; }
 
     public String getBio() { return bio; }
     public void setBio(String bio) { this.bio = bio; }
@@ -151,7 +128,15 @@ public class TechnicianProfile {
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
 
     public Set<Category> getCategories() { return categories; }
-    public void setCategories(Set<Category> categories) { this.categories = categories; }
+    public void setCategories(Set<Category> categories) {
+        this.categories = categories;
+        if (categories != null) {
+            this.categoryIds = categories.stream().map(Category::getId).collect(Collectors.toSet());
+        }
+    }
+
+    public Set<String> getCategoryIds() { return categoryIds; }
+    public void setCategoryIds(Set<String> categoryIds) { this.categoryIds = categoryIds; }
 
     public Set<Brand> getBrands() { return brands; }
     public void setBrands(Set<Brand> brands) { this.brands = brands; }
